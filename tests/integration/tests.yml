@@ -1,0 +1,2025 @@
+---
+- name: Tests
+  hosts: all
+  gather_facts: no
+  connection: local
+  vars:
+    # these should be defined at the inventory level
+    # but must be here until the action plugin is working
+    mt_hostname: '127.0.0.1'
+    mt_user: 'admin'
+    mt_pass: ''
+
+  tasks:
+    - name: Test login
+      mt_login_test:
+        hostname: "{{ mt_hostname }}"
+        username: "{{ mt_user }}"
+        password: "{{ mt_pass }}"
+
+    ###############################
+    # Interfaces
+    #################################
+    - block:
+      ###################
+      ### vlan block
+      ###################
+      - block:
+        - name: Test adding vlan
+          mt_interfaces:
+            hostname:  "{{ mt_hostname }}"
+            username:  "{{ mt_user }}"
+            password:  "{{ mt_pass }}"
+            state:     present
+            parameter: vlan
+            settings:
+              name:     vlan_test1
+              vlan_id:  30
+              interface: ether3
+              comment:   Testing vlan1
+
+        - name: NEVER_CHANGES Test adding duplicate vlan interface
+          mt_interfaces:
+            hostname: "{{ mt_hostname }}"
+            username: "{{ mt_user }}"
+            password: "{{ mt_pass }}"
+            state:       present
+            parameter: vlan
+            settings:
+              name:     vlan_test1
+              vlan_id:  30
+              interface: ether3
+          register: vlan_test_1_add
+          failed_when: (
+              not ansible_check_mode
+            ) and (
+              ( vlan_test_1_add | changed )
+            )
+
+        - name: ALWAYS_CHANGES Test adding second vlan to be removed later
+          mt_interfaces:
+            hostname: "{{ mt_hostname }}"
+            username: "{{ mt_user }}"
+            password: "{{ mt_pass }}"
+            state:       present
+            parameter: vlan
+            settings:
+              name:     vlan_test2
+              vlan_id:  32
+              interface: ether4
+          register: vlan_test_2_add
+          failed_when: (
+              not ansible_check_mode
+            ) and (
+              not ( vlan_test_2_add | changed )
+            )
+
+        - name: ALWAYS_CHANGES Test editing an existing vlan (change vlan_id)
+          mt_interfaces:
+            hostname: "{{ mt_hostname }}"
+            username: "{{ mt_user }}"
+            password: "{{ mt_pass }}"
+            state:       present
+            parameter: vlan
+            settings:
+              name:     vlan_test1
+              vlan_id:  36
+              interface: ether3
+              comment:    "testing ansible stuff"
+          register: vlan_test_1_edit
+          failed_when: (
+              not ansible_check_mode
+            ) and (
+              not ( vlan_test_1_edit | changed )
+            )
+
+        - name: ALWAYS_CHANGES Test remove vlan
+          mt_interfaces:
+            hostname: "{{ mt_hostname }}"
+            username: "{{ mt_user }}"
+            password: "{{ mt_pass }}"
+            state:    absent
+            parameter: vlan
+            settings:
+              name:     vlan_test2
+          register: vlan_test_2_rem
+          failed_when: (
+              not ansible_check_mode
+              ) and (
+               not (
+               vlan_test_2_rem | changed )
+              )
+
+        tags: interfaces-vlan
+
+      ########################
+      ###  ethernet block
+      ########################
+      - block:
+        - name: Add comment to ether1
+          mt_interfaces:
+            hostname: "{{ mt_hostname }}"
+            username: "{{ mt_user }}"
+            password: "{{ mt_pass }}"
+            settings: "{{ item.settings }}"
+            parameter: "ethernet"
+          with_items:
+            - settings:
+                name:     ether1
+                comment:  Ansible controlled ether1
+
+        - name: Add comment to ether1 again (idempotency test)
+          mt_interfaces:
+            hostname: "{{ mt_hostname }}"
+            username: "{{ mt_user }}"
+            password: "{{ mt_pass }}"
+            settings: "{{ item.settings }}"
+            parameter: "ethernet"
+          with_items:
+            - settings:
+                name:     ether1
+                comment:  Ansible controlled ether1
+          register: ether1_comment
+          failed_when: ( ether1_comment | changed )
+
+        - name: USUALLY_CHANGES Modify mtu of ether2
+          mt_interfaces:
+            hostname: "{{ mt_hostname }}"
+            username: "{{ mt_user }}"
+            password: "{{ mt_pass }}"
+            settings: "{{ item.settings }}"
+            parameter: "ethernet"
+          with_items:
+            - settings:
+                name:     ether2
+                mtu:      1500
+
+        - name: ALWAYS_CHANGES Modify mtu of ether2
+          mt_interfaces:
+            hostname: "{{ mt_hostname }}"
+            username: "{{ mt_user }}"
+            password: "{{ mt_pass }}"
+            settings: "{{ item.settings }}"
+            parameter: "ethernet"
+          with_items:
+            - settings:
+                name:     ether2
+                mtu:      1501
+          register: ether2_mtu
+          failed_when: (
+              not ansible_check_mode
+            ) and (
+              not ( ether2_mtu | changed )
+            )
+
+        tags: interfaces-ethernet
+
+      tags: interfaces
+
+    ###################
+    ### ip-pool
+    ###################
+    - block:
+      - name: Test adding ip pool
+        mt_ip_pool:
+          hostname: "{{ mt_hostname }}"
+          username: "{{ mt_user }}"
+          password: "{{ mt_pass }}"
+          state:       present
+          name: ansible_test
+          ranges: 102.3.4.5
+
+      - name: NEVER_CHANGES Test adding duplicate ip pool
+        mt_ip_pool:
+          hostname: "{{ mt_hostname }}"
+          username: "{{ mt_user }}"
+          password: "{{ mt_pass }}"
+          state:       present
+          name: ansible_test
+          ranges: 102.3.4.5
+        register: ip_pool_test_1_add
+        failed_when: ( ip_pool_test_1_add | changed )
+
+      - name: ALWAYS_CHANGES Test adding second ip pool to be removed later
+        mt_ip_pool:
+          hostname: "{{ mt_hostname }}"
+          username: "{{ mt_user }}"
+          password: "{{ mt_pass }}"
+          state:       present
+          name: ansible_test2
+          ranges: 102.3.4.22
+        register: ip_pool_test_2_add
+        failed_when: not ( ip_pool_test_2_add | changed )
+
+      - name: Test adding ip pool to be used as next_pool
+        mt_ip_pool:
+          hostname: "{{ mt_hostname }}"
+          username: "{{ mt_user }}"
+          password: "{{ mt_pass }}"
+          state:       present
+          name: next_pool1
+          ranges: 10.1.2.30-10.2.3.40
+
+      - name: ALWAYS_CHANGES Test editing an existing ip-pool item (change ranges add next_pool)
+        mt_ip_pool:
+          hostname: "{{ mt_hostname }}"
+          username: "{{ mt_user }}"
+          password: "{{ mt_pass }}"
+          state:       present
+          name: ansible_test
+          ranges: 102.3.4.6
+          next_pool: next_pool1
+        register: ip_pool_test_1_edit
+        failed_when: not ( ip_pool_test_1_edit | changed )
+
+      - name: ALWAYS_CHANGES Test remove ip pool
+        mt_ip_pool:
+          hostname: "{{ mt_hostname }}"
+          username: "{{ mt_user }}"
+          password: "{{ mt_pass }}"
+          state:       absent
+          name: ansible_test2
+        register: ip_pool_test_2_rem
+        failed_when: not ( ip_pool_test_2_rem | changed )
+
+      tags: ip-pool
+    ##################
+    ### dhcp_server
+    ###################
+    - block:
+      - name: Test adding ip pool to be used by dhcp_server
+        mt_ip_pool:
+          hostname: "{{ mt_hostname }}"
+          username: "{{ mt_user }}"
+          password: "{{ mt_pass }}"
+          state:    present
+          name:     pool1
+          ranges:   102.3.4.5
+
+      - name: Test adding a dhcp_server
+        mt_dhcp_server:
+          hostname:   "{{ mt_hostname }}"
+          username:   "{{ mt_user }}"
+          password:   "{{ mt_pass }}"
+          state:         "present"
+          parameter: dhcp-server
+          settings:
+            name:          ansible_test
+            address-pool:  'pool1'
+            interface:     ether1
+            use-radius:    "yes"
+            authoritative: after-2sec-delay
+
+      - name: ALWAYS_CHANGES Test editing an existing dhcp server (change authoritative)
+        mt_dhcp_server:
+          hostname:   "{{ mt_hostname }}"
+          username:   "{{ mt_user }}"
+          password:   "{{ mt_pass }}"
+          state:      "present"
+          parameter:  dhcp-server
+          settings:
+            name:          ansible_test
+            address-pool:  'pool1'
+            interface:     ether1
+            use-radius:    "yes"
+            authoritative: after-10sec-delay
+        register: dhcp_server_test_1_edit
+        failed_when: not ( dhcp_server_test_1_edit | changed )
+
+      - name: NEVER_CHANGES Test adding a duplicate of the first dhcp server
+        mt_dhcp_server:
+          hostname:  "{{ mt_hostname }}"
+          username:  "{{ mt_user }}"
+          password:  "{{ mt_pass }}"
+          state:     "present"
+          parameter: dhcp-server
+          settings:
+            name:         ansible_test
+            address-pool: 'pool1'
+            interface:    ether1
+            use-radius:   "yes"
+        register: dhcp_server_test_1_duplicate
+        failed_when: ( dhcp_server_test_1_duplicate|changed )
+
+      - name: ALWAYS_CHANGES Test adding another dhcp server to later remove
+        mt_dhcp_server:
+          hostname:   "{{ mt_hostname }}"
+          username:   "{{ mt_user }}"
+          password:   "{{ mt_pass }}"
+          state:      "present"
+          parameter: dhcp-server
+          settings:
+            interface:  "ether5"
+            name:       "ansible_test_2"
+        register: dhcp_server_test_2
+        failed_when: not ( dhcp_server_test_2 | changed )
+
+      - name: ALWAYS_CHANGES Test removing a dhcp server
+        mt_dhcp_server:
+          hostname:  "{{ mt_hostname }}"
+          username:  "{{ mt_user }}"
+          password:  "{{ mt_pass }}"
+          state:     "absent"
+          parameter: dhcp-server
+          settings:
+            name:       "ansible_test_2"
+        register: dhcp_server_test_2_rem
+        failed_when: not ( dhcp_server_test_2_rem | changed )
+
+      - name: add a dhcp-server network
+        mt_dhcp_server:
+          hostname:   "{{ mt_hostname }}"
+          username:   "{{ mt_user }}"
+          password:   "{{ mt_pass }}"
+          state:      "present"
+          parameter:  network
+          settings:
+            address: '192.168.10.0/24'
+
+      - name: add a second dhcp-server network
+        mt_dhcp_server:
+          hostname:   "{{ mt_hostname }}"
+          username:   "{{ mt_user }}"
+          password:   "{{ mt_pass }}"
+          state:      "present"
+          parameter:  network
+          settings:
+            address: 10.147.172.0/24
+            comment: "Phones network"
+            dns-server: 10.147.172.2
+            gateway: 10.147.172.1
+
+      - name: ALWAYS_CHANGES modify a second dhcp-server network
+        mt_dhcp_server:
+          hostname:   "{{ mt_hostname }}"
+          username:   "{{ mt_user }}"
+          password:   "{{ mt_pass }}"
+          state:      "present"
+          parameter:  network
+          settings:
+            address: 10.147.172.0/24
+            comment: "Phones network"
+            dns-server: 10.147.172.20
+            gateway: 10.147.172.1
+        register: dhcp_network_mod
+        failed_when: not ( dhcp_network_mod | changed )
+
+      - name: ALWAYS_CHANGES remove first dhcp-server network
+        mt_dhcp_server:
+          hostname:   "{{ mt_hostname }}"
+          username:   "{{ mt_user }}"
+          password:   "{{ mt_pass }}"
+          state:      "absent"
+          parameter:  network
+          settings:
+            address: '192.168.10.0/24'
+        register: dhcp_network_rem
+        failed_when: not ( dhcp_network_rem | changed )
+
+      - name: Test adding an item to dhcp-server options
+        mt_dhcp_server:
+          hostname:   "{{ mt_hostname }}"
+          username:   "{{ mt_user }}"
+          password:   "{{ mt_pass }}"
+          state:      "present"
+          parameter:  option
+          settings:
+            name: ansible_test
+            code: "251"
+
+      tags: dhcp-server
+
+    ###################
+    ### ovpn-client
+    ###################
+    - block:
+      - name: Test adding ovpn-client
+        mt_interface_ovpn_client:
+          hostname: "{{ mt_hostname }}"
+          username: "{{ mt_user }}"
+          password: "{{ mt_pass }}"
+          state:       present
+          comment: "ansible test 1"
+          user:    ansible_admin
+          connect_to:  192.168.50.170
+          name: ansible_test
+          vpn_password: 'blablabla'
+
+      - name: NEVER_CHANGES Test adding duplicate ovpn-client
+        mt_interface_ovpn_client:
+          hostname: "{{ mt_hostname }}"
+          username: "{{ mt_user }}"
+          password: "{{ mt_pass }}"
+          state:       present
+          comment: "ansible test 1"
+          user:    ansible_admin
+          connect_to:  192.168.50.170
+          name: ansible_test
+          vpn_password: 'blablabla'
+        register: ovpn_client_test_1_add
+        failed_when: ( ovpn_client_test_1_add | changed )
+
+      - name: ALWAYS_CHANGES Test editing an existing ovpn-client item (change address)
+        mt_interface_ovpn_client:
+          hostname: "{{ mt_hostname }}"
+          username: "{{ mt_user }}"
+          password: "{{ mt_pass }}"
+          state:       present
+          comment: "ansible test 1"
+          user:    ansible_admin
+          connect_to:  192.168.50.171
+          auth: "null"
+          name: ansible_test
+          vpn_password: 'bar'
+        register: ovpn_client_test_1_edit
+        failed_when: not ( ovpn_client_test_1_edit | changed )
+
+      - name: ALWAYS_CHANGES Test adding a second ovpn-client to later remove
+        mt_interface_ovpn_client:
+          hostname: "{{ mt_hostname }}"
+          username: "{{ mt_user }}"
+          password: "{{ mt_pass }}"
+          comment: "ansible test 2"
+          state:       present
+          user:    ansible_admin
+          connect_to:  192.168.52.111
+          name: ansible_test2
+        register: ovpn_client_test_2_add
+        failed_when: not ( ovpn_client_test_2_add | changed )
+
+      - name: ALWAYS_CHANGES Test remove ovpn-client
+        mt_interface_ovpn_client:
+          hostname: "{{ mt_hostname }}"
+          username: "{{ mt_user }}"
+          password: "{{ mt_pass }}"
+          state:       absent
+          name: ansible_test2
+        register: ovpn_client_test_2_rem
+        failed_when: not ( ovpn_client_test_2_rem | changed )
+      tags: ovpn-client
+
+    ###################
+    ### radius
+    ###################
+    - block:
+      - name: Test adding a radius item
+        mt_radius:
+          hostname:   "{{ mt_hostname }}"
+          username:   "{{ mt_user }}"
+          password:   "{{ mt_pass }}"
+          state:      "present"
+          address:     "192.168.12.2"
+          comment:    'Ansible - radius test 1'
+          secret:     'password'
+          service:
+            - login
+            - hotspot
+            - wireless
+          timeout:        '2s500ms'
+
+      - name: ALWAYS_CHANGES Test editing an existing radius item (change address)
+        mt_radius:
+          hostname:   "{{ mt_hostname }}"
+          username:   "{{ mt_user }}"
+          password:   "{{ mt_pass }}"
+          state:      "present"
+          address:     "192.168.12.19"
+          comment:    'Ansible - radius test 1'
+          secret:     'password'
+          service:
+            - login
+            - hotspot
+            - wireless
+          timeout:        '2s500ms'
+        register: radius_test_1_edit
+        failed_when: not ( radius_test_1_edit | changed )
+        #changed_when: False
+
+      - name: ALWAYS_CHANGES Test editing an existing radius item (change address back)
+        mt_radius:
+          hostname:   "{{ mt_hostname }}"
+          username:   "{{ mt_user }}"
+          password:   "{{ mt_pass }}"
+          state:      "present"
+          address:     "192.168.12.2"
+          comment:    'Ansible - radius test 1'
+          secret:     'password'
+          service:
+            - login
+            - hotspot
+            - wireless
+          timeout:        '2s500ms'
+        register: radius_test_1_edit
+        failed_when: not ( radius_test_1_edit | changed )
+        #changed_when: False
+
+      - name: Test adding a duplicate of the first radius item
+        mt_radius:
+          hostname:   "{{ mt_hostname }}"
+          username:   "{{ mt_user }}"
+          password:   "{{ mt_pass }}"
+          state:      "present"
+          address:     "192.168.12.2"
+          comment:    'Ansible - radius test 1'
+          secret:     'password'
+          service:
+            - login
+            - hotspot
+            - wireless
+          timeout:        '2s500ms'
+        register: radius_test_1_duplicate
+        failed_when: ( radius_test_1_duplicate|changed )
+
+      - name: ALWAYS_CHANGES Test adding another radius item to later remove
+        mt_radius:
+          hostname:   "{{ mt_hostname }}"
+          username:   "{{ mt_user }}"
+          password:   "{{ mt_pass }}"
+          state:      "present"
+          address:     "192.168.12.2"
+          comment:    'Ansible - radius test 2'
+          secret:     'password'
+          service:
+            - login
+            - hotspot
+            - wireless
+          timeout:        '2s500ms'
+        register: radius_test_2
+        failed_when: not ( radius_test_2 | changed )
+
+      - name: ALWAYS_CHANGES Test removing a radius item
+        mt_radius:
+          hostname:   "{{ mt_hostname }}"
+          username:   "{{ mt_user }}"
+          password:   "{{ mt_pass }}"
+          state:      "absent"
+          comment:    'Ansible - radius test 2'
+          incoming:
+            accept: "true"
+            port: "37988"
+        register: radius_test_2_rem
+        failed_when: not ( radius_test_2_rem | changed )
+
+      tags: radius
+
+
+    ###################
+    ### address_list
+    ###################
+    - block:
+      - name: ALWAYS_CHANGES Test adding a firewall address-list
+        mt_ip_firewall_addresslist:
+          hostname:   "{{ mt_hostname }}"
+          username:   "{{ mt_user }}"
+          password:   "{{ mt_pass }}"
+          state:      "present"
+          list_name: test_list
+          address_list:
+            - address: 192.168.1.2
+              comment: dns1
+            - address: 192.168.1.3
+              comment: dns2
+            - address: 192.168.1.6
+              comment: test_comment3
+        register: address_list_add_1
+        failed_when: not ( address_list_add_1 | changed )
+
+      - name: ALWAYS_CHANGES Test editing a firewall address-list
+        mt_ip_firewall_addresslist:
+          hostname:   "{{ mt_hostname }}"
+          username:   "{{ mt_user }}"
+          password:   "{{ mt_pass }}"
+          state:      "present"
+          list_name: test_list
+          address_list:
+            - address: 192.168.1.2
+              comment: dns1
+            - address: 192.168.1.3
+              comment: dns2
+            - address: 192.168.1.19
+              comment: test_comment3
+        register: editress_list_edit_1
+        failed_when: not ( editress_list_edit_1 | changed )
+
+      - name: Test adding a duplicate address-list
+        mt_ip_firewall_addresslist:
+          hostname:   "{{ mt_hostname }}"
+          username:   "{{ mt_user }}"
+          password:   "{{ mt_pass }}"
+          state:      "present"
+          list_name: test_list
+          address_list:
+            - address: 192.168.1.2
+              comment: dns1
+            - address: 192.168.1.3
+              comment: dns2
+            - address: 192.168.1.19
+              comment: test_comment3
+        register: add_dupress_list_add_dup_1
+        failed_when: ( add_dupress_list_add_dup_1 | changed )
+
+      - name: ALWAYS_CHANGES Test removing a firewall address-list
+        mt_ip_firewall_addresslist:
+          hostname:   "{{ mt_hostname }}"
+          username:   "{{ mt_user }}"
+          password:   "{{ mt_pass }}"
+          state:      "absent"
+          list_name: test_list
+        register: remress_list_rem_1
+        failed_when: not ( remress_list_rem_1 | changed )
+
+      tags: address_list
+
+
+
+    ###################
+    ### ip_address
+    ###################
+    - block:
+      - name: ALWAYS_CHANGES Test adding an ip addr ether2
+        mt_ip_address:
+          hostname:   "{{ mt_hostname }}"
+          username:   "{{ mt_user }}"
+          password:   "{{ mt_pass }}"
+          state:      "present"
+          interface:  "ether2"
+          address:    "192.168.88.2/24"
+          network:    "192.168.88.0"
+        register: ip_addr_add_2
+        failed_when: not ( ip_addr_add_2 | changed )
+
+      - name: Test adding an ip addr with comment ether3
+        mt_ip_address:
+          hostname:   "{{ mt_hostname }}"
+          username:   "{{ mt_user }}"
+          password:   "{{ mt_pass }}"
+          state:      "present"
+          interface:  "ether3"
+          address:    "192.168.88.3/24"
+          comment:    "interface #3!!!"
+
+      - name: Test adding an ip addr with comment and network ether4
+        mt_ip_address:
+          hostname:   "{{ mt_hostname }}"
+          username:   "{{ mt_user }}"
+          password:   "{{ mt_pass }}"
+          state:      "present"
+          interface:  "ether4"
+          address:    "192.168.88.4/24"
+          network:    "192.168.88.0"
+          comment:    "interface #4!!!"
+
+      - name: ALWAYS_CHANGES Test removing ip addr ether2
+        mt_ip_address:
+          hostname:   "{{ mt_hostname }}"
+          username:   "{{ mt_user }}"
+          password:   "{{ mt_pass }}"
+          state:      "absent"
+          interface:  "ether2"
+          address:    "192.168.88.2/24"
+        register: ip_addr_rem_2
+        failed_when: not ( ip_addr_rem_2 | changed )
+
+      tags: ip_address
+
+    ###################
+    ### firewall block
+    ###################
+
+    - block:
+      ###################
+      ### filter block
+      ###################
+      - block:
+        - name: Test adding firewall filter rules
+          mt_ip_firewall:
+            hostname:   "{{ mt_hostname }}"
+            username:   "{{ mt_user }}"
+            password:   "{{ mt_pass }}"
+            state:      "present"
+            parameter: filter
+            rule: "{{ item }}"
+          with_items:
+            - action: accept
+              chain: forward
+              comment: 'Ansible - fw filter rule1'
+              place-before: '0'
+            - action: accept
+              chain: input
+              comment: 'Ansible - fw filter rule2'
+              place-before: '1'
+            - action: passthrough
+              chain: input
+              comment: 'Ansible - fw filter rule3'
+              place-before: '2'
+            - action: reject
+              chain: forward
+              comment: 'Ansible - fw filter rule4'
+              place-before: '3'
+              src-address: 192.168.0.0/16
+            - action: accept
+              chain: forward
+              comment: 'Ansible - fw filter rule5'
+              place-before: '4'
+
+        - name: add some manual rules to simulate chaos, command module
+          mt_command:
+            hostname: "{{ mt_hostname }}"
+            username: "{{ mt_user }}"
+            password: "{{ mt_pass }}"
+            command:  /ip/firewall/filter/add
+            command_arguments: "{{ item }}"
+          with_items:
+            - action: accept
+              chain: output
+              comment: 'manual test rules'
+              place-before: '3'
+            - action: accept
+              chain: output
+              comment: 'manual test rules'
+              place-before: '1'
+            - action: accept
+              chain: output
+              comment: 'manual test rules'
+              place-before: '0'
+
+        - name: Fix firewall state
+          mt_ip_firewall:
+            hostname:   "{{ mt_hostname }}"
+            username:   "{{ mt_user }}"
+            password:   "{{ mt_pass }}"
+            state:      "present"
+            parameter: filter
+            rule: "{{ item }}"
+          with_items:
+            - action: accept
+              chain: forward
+              comment: 'Ansible - fw filter rule1'
+              place-before: '0'
+            - action: accept
+              chain: input
+              comment: 'Ansible - fw filter rule2'
+              place-before: '1'
+            - action: passthrough
+              chain: input
+              comment: 'Ansible - fw filter rule3'
+              place-before: '2'
+            - action: reject
+              chain: forward
+              comment: 'Ansible - fw filter rule4'
+              place-before: '3'
+              src-address: 192.168.0.0/16
+            - action: accept
+              chain: forward
+              comment: 'Ansible - fw filter rule5'
+              place-before: '4'
+
+        - name: NEVER_CHANGES, check idempotency
+          mt_ip_firewall:
+            hostname:   "{{ mt_hostname }}"
+            username:   "{{ mt_user }}"
+            password:   "{{ mt_pass }}"
+            state:      "present"
+            parameter: filter
+            rule: "{{ item }}"
+          with_items:
+            - action: accept
+              chain: forward
+              comment: 'Ansible - fw filter rule1'
+              place-before: '0'
+            - action: accept
+              chain: input
+              comment: 'Ansible - fw filter rule2'
+              place-before: '1'
+            - action: passthrough
+              chain: input
+              comment: 'Ansible - fw filter rule3'
+              place-before: '2'
+            - action: reject
+              chain: forward
+              comment: 'Ansible - fw filter rule4'
+              place-before: '3'
+              src-address: 192.168.0.0/16
+            - action: accept
+              chain: forward
+              comment: 'Ansible - fw filter rule5'
+              place-before: '4'
+          register: check_idem
+          failed_when: ( check_idem | changed )
+          tags: test-firewall
+
+        - name: ALWAYS_CHANGES Test editing existing rule
+          mt_ip_firewall:
+            hostname:   "{{ mt_hostname }}"
+            username:   "{{ mt_user }}"
+            password:   "{{ mt_pass }}"
+            state:      "present"
+            parameter: filter
+            rule: "{{ item }}"
+          with_items:
+            - action: accept
+              chain: forward
+              comment: 'Ansible - fw filter rule4'
+              src-address: 192.168.0.0/16
+              place-before: '3'
+          register: edit_filter_rule
+          failed_when: not ( edit_filter_rule | changed )
+
+        - name: NEVER_CHANGES Test editing existing rule check idempotency again
+          mt_ip_firewall:
+            hostname:   "{{ mt_hostname }}"
+            username:   "{{ mt_user }}"
+            password:   "{{ mt_pass }}"
+            state:      "present"
+            parameter: filter
+            rule: "{{ item }}"
+          with_items:
+            - action: accept
+              chain: forward
+              comment: 'Ansible - fw filter rule4'
+              src-address: 192.168.0.0/16
+              place-before: '3'
+          register: edit_filter_rule_2
+          failed_when: ( edit_filter_rule_2 | changed )
+          tags: test-firewall
+
+        - name: add a rule to the bottom of the chain
+          mt_ip_firewall:
+            hostname:   "{{ mt_hostname }}"
+            username:   "{{ mt_user }}"
+            password:   "{{ mt_pass }}"
+            state:      "present"
+            parameter: filter
+            rule: "{{ item }}"
+          with_items:
+            - action: accept
+              chain: forward
+              comment: 'Ansible - fw filter rule20'
+              src-address: 192.150.0.0/16
+              place-before: '20'
+
+        - name: ALWAYS_CHANGES, ensure that rule at the bottom changes
+          mt_ip_firewall:
+            hostname:   "{{ mt_hostname }}"
+            username:   "{{ mt_user }}"
+            password:   "{{ mt_pass }}"
+            state:      "present"
+            parameter: filter
+            rule: "{{ item }}"
+          with_items:
+            - action: reject
+              chain: forward
+              comment: 'Ansible - fw filter rule20'
+              src-address: 192.150.0.0/16
+              place-before: '20'
+          register: edit_filter_rule_3
+          failed_when: not ( edit_filter_rule_3 | changed )
+
+        - name: NEVER_CHANGES add a rule to the bottom of the chain, check_idempotency
+          mt_ip_firewall:
+            hostname:   "{{ mt_hostname }}"
+            username:   "{{ mt_user }}"
+            password:   "{{ mt_pass }}"
+            state:      "present"
+            parameter: filter
+            rule: "{{ item }}"
+          with_items:
+            - action: reject
+              chain: forward
+              comment: 'Ansible - fw filter rule20'
+              src-address: 192.150.0.0/16
+              place-before: '20'
+          register: edit_filter_rule_4
+          failed_when: ( edit_filter_rule_4 | changed )
+
+        - name: ALWAYS_CHANGES Test removing existing rule
+          mt_ip_firewall:
+            hostname:   "{{ mt_hostname }}"
+            username:   "{{ mt_user }}"
+            password:   "{{ mt_pass }}"
+            state:      "absent"
+            parameter: filter
+            rule: "{{ item }}"
+          with_items:
+            - place-before: '4'
+          register: rem_filter_rule
+          failed_when: not ( rem_filter_rule | changed )
+
+        tags: firewall-filter
+      ###################
+      ### end filter block
+      ###################
+
+      ###################
+      ### nat block
+      ###################
+      - block:
+        - name: Test adding firewall nat rules
+          mt_ip_firewall:
+            hostname:   "{{ mt_hostname }}"
+            username:   "{{ mt_user }}"
+            password:   "{{ mt_pass }}"
+            state:      "present"
+            parameter: nat
+            rule: "{{ item }}"
+          with_items:
+            - action: accept
+              chain: srcnat
+              comment: 'Ansible - fw filter rule1'
+              place-before: '0'
+            - action: accept
+              chain: dstnat
+              comment: 'Ansible - fw filter rule2'
+              place-before: '1'
+            - action: passthrough
+              chain: srcnat
+              comment: 'Ansible - fw filter rule3'
+              place-before: '2'
+            - action: return
+              chain: dstnat
+              comment: 'Ansible - fw filter rule4'
+              place-before: '3'
+              src-address: 192.168.0.0/16
+            - action: redirect
+              chain: dstnat
+              comment: 'Ansible - fw filter rule5'
+              place-before: '4'
+            - action: redirect
+              chain: dstnat
+              comment: 'Ansible - fw filter rule20'
+              place-before: '19'
+
+        - name: add some manual rules to simulate chaos, command module
+          mt_command:
+            hostname: "{{ mt_hostname }}"
+            username: "{{ mt_user }}"
+            password: "{{ mt_pass }}"
+            command:  /ip/firewall/nat/add
+            command_arguments: "{{ item }}"
+          with_items:
+            - action: passthrough
+              chain: srcnat
+              comment: 'manual test rules'
+              place-before: '3'
+            - action: passthrough
+              chain: srcnat
+              comment: 'manual test rules'
+              place-before: '1'
+            - action: passthrough
+              chain: srcnat
+              comment: 'manual test rules'
+              place-before: '0'
+
+        - name: fix nat state
+          mt_ip_firewall:
+            hostname:   "{{ mt_hostname }}"
+            username:   "{{ mt_user }}"
+            password:   "{{ mt_pass }}"
+            state:      "present"
+            parameter: nat
+            rule: "{{ item }}"
+          with_items:
+            - action: accept
+              chain: srcnat
+              comment: 'Ansible - fw filter rule1'
+              place-before: '0'
+            - action: accept
+              chain: dstnat
+              comment: 'Ansible - fw filter rule2'
+              place-before: '1'
+            - action: passthrough
+              chain: srcnat
+              comment: 'Ansible - fw filter rule3'
+              place-before: '2'
+            - action: return
+              chain: dstnat
+              comment: 'Ansible - fw filter rule4'
+              place-before: '3'
+              src-address: 192.168.0.0/16
+            - action: redirect
+              chain: dstnat
+              comment: 'Ansible - fw filter rule5'
+              place-before: '4'
+            - action: redirect
+              chain: dstnat
+              comment: 'Ansible - fw filter rule20'
+              place-before: '19'
+
+        - name: NEVER_CHANGES check_idempotency
+          mt_ip_firewall:
+            hostname:   "{{ mt_hostname }}"
+            username:   "{{ mt_user }}"
+            password:   "{{ mt_pass }}"
+            state:      "present"
+            parameter: nat
+            rule: "{{ item }}"
+          with_items:
+            - action: accept
+              chain: srcnat
+              comment: 'Ansible - fw filter rule1'
+              place-before: '0'
+            - action: accept
+              chain: dstnat
+              comment: 'Ansible - fw filter rule2'
+              place-before: '1'
+            - action: passthrough
+              chain: srcnat
+              comment: 'Ansible - fw filter rule3'
+              place-before: '2'
+            - action: return
+              chain: dstnat
+              comment: 'Ansible - fw filter rule4'
+              place-before: '3'
+              src-address: 192.168.0.0/16
+            - action: redirect
+              chain: dstnat
+              comment: 'Ansible - fw filter rule5'
+              place-before: '4'
+            - action: redirect
+              chain: dstnat
+              comment: 'Ansible - fw filter rule20'
+              place-before: '19'
+          register: nat_idem
+          failed_when: ( nat_idem | changed )
+
+        - name: ALWAYS_CHANGES, change rule
+          mt_ip_firewall:
+            hostname:   "{{ mt_hostname }}"
+            username:   "{{ mt_user }}"
+            password:   "{{ mt_pass }}"
+            state:      "present"
+            parameter: nat
+            rule: "{{ item }}"
+          with_items:
+            - action: return
+              chain: dstnat
+              comment: 'Ansible - fw filter rule4'
+              place-before: '3'
+              src-address: 192.165.0.0/16
+          register: nat_change
+          failed_when: not ( nat_change | changed )
+
+        - name: ALWAYS_CHANGES, remove rule
+          mt_ip_firewall:
+            hostname:   "{{ mt_hostname }}"
+            username:   "{{ mt_user }}"
+            password:   "{{ mt_pass }}"
+            state:      "absent"
+            parameter: nat
+            rule: "{{ item }}"
+          with_items:
+            - place-before: '4'
+          register: nat_rem
+          failed_when: not ( nat_rem | changed )
+
+        tags: firewall-nat
+
+      ###################
+      ### end nat block
+      ###################
+
+      tags: firewall
+
+    ###################
+    ### end firewall block
+    ###################
+
+    ###################
+    ### ip service
+    ###################
+    - block:
+      - name: Test enabling ftp service
+        mt_service:
+          hostname: "{{ mt_hostname }}"
+          username: "{{ mt_user }}"
+          password: "{{ mt_pass }}"
+          disabled: no
+          name:     ftp
+          address:  192.168.50.1/32
+
+      - name: Test disabling services
+        mt_service:
+          hostname: "{{ mt_hostname }}"
+          username: "{{ mt_user }}"
+          password: "{{ mt_pass }}"
+          disabled: yes
+          name: "{{ item }}"
+        with_items:
+          - ftp
+          - telnet
+          - api-ssl
+
+      - name: ALWAYS_CHANGES Test re-enabling telnet service
+        mt_service:
+          hostname: "{{ mt_hostname }}"
+          username: "{{ mt_user }}"
+          password: "{{ mt_pass }}"
+          disabled: no
+          name:     telnet
+        register: enable_telnet
+        failed_when: not ( enable_telnet | changed )
+      tags: service
+
+    ###################
+    ### interface bridge
+    ###################
+    - block:
+      - name: Add bridge1
+        mt_interface_bridge:
+          hostname: "{{ mt_hostname }}"
+          username: "{{ mt_user }}"
+          password: "{{ mt_pass }}"
+          name:     "{{ item }}"
+          state:    present
+          arp:      proxy-arp
+        with_items:
+          - "bridge1"
+
+      - name: Add bridge1 again (idempotency test)
+        mt_interface_bridge:
+          hostname: "{{ mt_hostname }}"
+          username: "{{ mt_user }}"
+          password: "{{ mt_pass }}"
+          name:     "{{ item }}"
+          state:    present
+          arp:      proxy-arp
+        with_items:
+          - "bridge1"
+        register: mod_bridge1
+        failed_when: ( mod_bridge1 | changed )
+
+      # bridge ports depend on bridge being created first
+
+      - name: Add interface to bridge1 (port)
+        mt_interface_bridge_port:
+          hostname:   "{{ mt_hostname }}"
+          username:   "{{ mt_user }}"
+          password:   "{{ mt_pass }}"
+          bridge:     "{{ item[0] }}"
+          interface:  "{{ item[1] }}"
+          state:      present
+        with_nested:
+          - [ "bridge1" ]
+          - [ "ether8" ]
+
+      - name: Add interface to bridge1 (port) again (idempotency test)
+        mt_interface_bridge_port:
+          hostname:   "{{ mt_hostname }}"
+          username:   "{{ mt_user }}"
+          password:   "{{ mt_pass }}"
+          bridge:     "{{ item[0] }}"
+          interface:  "{{ item[1] }}"
+          state:      present
+        with_nested:
+          - [ "bridge1" ]
+          - [ "ether8" ]
+        register: mod_bridge1_port
+        failed_when: ( mod_bridge1_port | changed )
+
+      - name: Add additional param to bridge port
+        mt_interface_bridge_port:
+          hostname:   "{{ mt_hostname }}"
+          username:   "{{ mt_user }}"
+          password:   "{{ mt_pass }}"
+          bridge:     "{{ item[0] }}"
+          interface:  "{{ item[1] }}"
+          edge:       "{{ item[2] }}"
+          state:      present
+        with_nested:
+          - [ "bridge1" ]
+          - [ "ether8" ]
+          - [ "yes-discover" ]
+
+      - name: ALWAYS_CHANGES Add 2nd interface to bridge1 port
+        mt_interface_bridge_port:
+          hostname: "{{ mt_hostname }}"
+          username: "{{ mt_user }}"
+          password: "{{ mt_pass }}"
+          bridge:     bridge1
+          interface: ether7
+          state:    present
+        with_nested:
+          - [ "bridge1" ]
+          - [ "ether7" ]
+        register: bridge1_add_2nd_inter
+        failed_when: not ( bridge1_add_2nd_inter | changed )
+
+      - name: ALWAYS_CHANGES Remove 2nd interface to bridge1 port
+        mt_interface_bridge_port:
+          hostname: "{{ mt_hostname }}"
+          username: "{{ mt_user }}"
+          password: "{{ mt_pass }}"
+          bridge:     bridge1
+          interface:  ether7
+          state:      absent
+        with_nested:
+          - [ "bridge1" ]
+          - [ "ether7" ]
+        register: bridge1_rem_2nd_inter
+        failed_when: not ( bridge1_rem_2nd_inter | changed )
+
+      - name: Add bridge2
+        mt_interface_bridge:
+          hostname: "{{ mt_hostname }}"
+          username: "{{ mt_user }}"
+          password: "{{ mt_pass }}"
+          state:    present
+          name:     "{{ item.key }}"
+          arp:      "{{ item.value.arp }}"
+        with_dict:
+          bridge2:
+            arp: "reply-only"
+
+
+      - name: Adjust settings
+        mt_interface_bridge:
+          hostname: "{{ mt_hostname }}"
+          username: "{{ mt_user }}"
+          password: "{{ mt_pass }}"
+          #state:    present
+          settings:
+            allow-fast-path: yes
+            use-ip-firewall-for-vlan: yes
+            use-ip-firewall-for-pppoe: no
+
+      - name: Adjust settings (test changes)
+        mt_interface_bridge:
+          hostname: "{{ mt_hostname }}"
+          username: "{{ mt_user }}"
+          password: "{{ mt_pass }}"
+          #state:    present
+          settings:
+            allow-fast-path: yes
+            use-ip-firewall-for-vlan: no
+            use-ip-firewall-for-pppoe: no
+        register: bridge_settings_1
+        failed_when: not ( bridge_settings_1 | changed )
+
+      - name: Adjust settings again (idempotency test)
+        mt_interface_bridge:
+          hostname: "{{ mt_hostname }}"
+          username: "{{ mt_user }}"
+          password: "{{ mt_pass }}"
+          #state:    present
+          settings:
+            allow-fast-path: yes
+            use-ip-firewall-for-vlan: no
+            use-ip-firewall-for-pppoe: no
+        register: bridge_settings_2
+        failed_when: ( bridge_settings_2 | changed )
+
+      tags: bridge
+
+    ###########################
+    ### system scheduler
+    ##########################
+
+    - block:
+      - name: add scheduler
+        mt_system_scheduler:
+          hostname: "{{ mt_hostname }}"
+          username: "{{ mt_user }}"
+          password: "{{ mt_pass }}"
+          state:    present
+          name:     ansible_test
+          on_event: 'put "test"'
+          interval: 1s
+
+      - name: ALWAYS_CHANGES modify existing scheduler
+        mt_system_scheduler:
+          hostname: "{{ mt_hostname }}"
+          username: "{{ mt_user }}"
+          password: "{{ mt_pass }}"
+          state:    present
+          name:     ansible_test
+          on_event: 'put "test"'
+          interval: 5s
+          policy:
+            - password
+            - sniff
+            - write
+        register: scheduler_mod
+        failed_when: not ( scheduler_mod | changed )
+
+      - name: NEVER_CHANGES add duplicate scheduler
+        mt_system_scheduler:
+          hostname: "{{ mt_hostname }}"
+          username: "{{ mt_user }}"
+          password: "{{ mt_pass }}"
+          state:    present
+          name:     ansible_test
+          on_event: 'put "test"'
+          interval: 5s
+          policy:
+            - password
+            - sniff
+            - write
+        register: scheduler_dup
+        failed_when: ( scheduler_dup | changed )
+
+      - name: ALWAYS_CHANGES remove duplicate scheduler
+        mt_system_scheduler:
+          hostname: "{{ mt_hostname }}"
+          username: "{{ mt_user }}"
+          password: "{{ mt_pass }}"
+          state:    absent
+          name:     ansible_test
+        register: scheduler_rem
+        failed_when: not ( scheduler_rem | changed )
+
+      tags: scheduler
+
+    ###########################
+    ### system command
+    ##########################
+
+    - block:
+      - name: add scheduler
+        mt_system_scheduler:
+          hostname: "{{ mt_hostname }}"
+          username: "{{ mt_user }}"
+          password: "{{ mt_pass }}"
+          state:    present
+          name:     ansible_test
+          on_event: 'put "test"'
+          interval: 1s
+
+      - name: run command to disable system scheduler task
+        mt_command:
+          hostname: "{{ mt_hostname }}"
+          username: "{{ mt_user }}"
+          password: "{{ mt_pass }}"
+          command:   /system/scheduler/disable
+          command_arguments:
+            numbers: ansible_test
+
+      - name: run command
+        mt_command:
+          hostname: "{{ mt_hostname }}"
+          username: "{{ mt_user }}"
+          password: "{{ mt_pass }}"
+          command:  "/interface/print"
+        tags: print
+
+      tags: command
+
+
+    ###################
+    ### system
+    ###################
+    - block:
+      - name: set identity
+        mt_system:
+          hostname: "{{ mt_hostname }}"
+          username: "{{ mt_user }}"
+          password: "{{ mt_pass }}"
+          parameter: identity
+          settings:
+            name: Test_mikrotik
+
+      - name: set routerboard settings on physical device
+        mt_system:
+          hostname: "{{ mt_hostname }}"
+          username: "{{ mt_user }}"
+          password: "{{ mt_pass }}"
+          parameter: routerboard_settings
+          settings:
+            #protected-routerboot: disabled
+            boot-protocol: dhcp
+        when: '"127.0.0.1" not in mt_hostname'
+        tags: routerboard_settings
+
+      - name: set clock
+        mt_system:
+          hostname: "{{ mt_hostname }}"
+          username: "{{ mt_user }}"
+          password: "{{ mt_pass }}"
+          parameter: clock
+          settings:
+            time-zone-autodetect: "no"
+            time-zone-name: Greenwich
+
+      - name: ALWAYS_CHANGES modify clock, change time-zone-name
+        mt_system:
+          hostname: "{{ mt_hostname }}"
+          username: "{{ mt_user }}"
+          password: "{{ mt_pass }}"
+          parameter: clock
+          settings:
+            time-zone-name: GMT
+        register: mt_clock
+        failed_when: not ( mt_clock | changed )
+
+      - name: set ntp client
+        mt_system:
+          hostname: "{{ mt_hostname }}"
+          username: "{{ mt_user }}"
+          password: "{{ mt_pass }}"
+          parameter: ntp_client
+          settings:
+            enabled: "yes"
+            primary-ntp: 199.182.221.11
+            secondary-ntp: 67.215.197.149
+
+      - name: NEVER_CHANGES set ntp client, check idempotency
+        mt_system:
+          hostname: "{{ mt_hostname }}"
+          username: "{{ mt_user }}"
+          password: "{{ mt_pass }}"
+          parameter: ntp_client
+          settings:
+            enabled: "yes"
+            primary-ntp: 199.182.221.11
+            secondary-ntp: 67.215.197.149
+        register: mt_ntp_client
+        failed_when: ( mt_ntp_client | changed )
+
+      - name: ALWAYS_CHANGES modify ntp client
+        mt_system:
+          hostname: "{{ mt_hostname }}"
+          username: "{{ mt_user }}"
+          password: "{{ mt_pass }}"
+          parameter: ntp_client
+          settings:
+            enabled: "no"
+            primary-ntp: 199.182.221.11
+            secondary-ntp: 67.215.197.149
+        register: mt_ntp_client_change
+        failed_when: not ( mt_ntp_client_change | changed )
+
+      ##############################################
+      # WIP
+      ###############################################
+      - name: modify logging
+        mt_system:
+          hostname: "{{ mt_hostname }}"
+          username: "{{ mt_user }}"
+          password: "{{ mt_pass }}"
+          parameter: logging
+          settings: "{{ item }}"
+        with_items:
+          - numbers: "0"
+            action: disk
+            disabled: "yes"
+          - numbers: "1"
+            action: memory
+            disabled: "yes"
+
+      tags: system
+
+    ###################
+    ### tool
+    ###################
+    - block:
+      - name: set email settings
+        mt_tool:
+          hostname: "{{ mt_hostname }}"
+          username: "{{ mt_user }}"
+          password: "{{ mt_pass }}"
+          parameter: e-mail
+          settings:
+            address: 192.168.1.2
+            from: email@localhost.com
+
+      - name: ALWAYS_CHANGES set email settings
+        mt_tool:
+          hostname: "{{ mt_hostname }}"
+          username: "{{ mt_user }}"
+          password: "{{ mt_pass }}"
+          parameter: e-mail
+          settings:
+            address: 192.168.1.3
+            from: email@localhost.com
+        register: email_edit
+        failed_when: not ( email_edit | changed )
+
+      - name: add netwatch item
+        mt_tool:
+          hostname: "{{ mt_hostname }}"
+          username: "{{ mt_user }}"
+          password: "{{ mt_pass }}"
+          parameter: netwatch
+          state:     present
+          settings:
+            host: '192.168.10.1'
+            up-script: test
+
+      - name: NEVER_CHANGES add netwatch item, idempotency check
+        mt_tool:
+          hostname: "{{ mt_hostname }}"
+          username: "{{ mt_user }}"
+          password: "{{ mt_pass }}"
+          parameter: netwatch
+          state:     present
+          settings:
+            host: '192.168.10.1'
+            up-script: test
+        register: netwatch_idem
+        failed_when: ( netwatch_idem | changed )
+
+      - name: ALWAYS_CHANGES edit netwatch item, change up-script
+        mt_tool:
+          hostname: "{{ mt_hostname }}"
+          username: "{{ mt_user }}"
+          password: "{{ mt_pass }}"
+          parameter: netwatch
+          state:     present
+          settings:
+            host: '192.168.10.1'
+            up-script: test2
+        register: netwatch_edit
+        failed_when: not ( netwatch_edit | changed )
+
+      - name: ALWAYS_CHANGES remove netwatch item
+        mt_tool:
+          hostname: "{{ mt_hostname }}"
+          username: "{{ mt_user }}"
+          password: "{{ mt_pass }}"
+          parameter: netwatch
+          state:     absent
+          settings:
+            host: '192.168.10.1'
+        register: netwatch_rem
+        failed_when: not ( netwatch_rem | changed )
+
+      tags: tool
+
+    ###################
+    ### snmp
+    ###################
+    - block:
+      - name: add snmp community
+        mt_snmp:
+          hostname: "{{ mt_hostname }}"
+          username: "{{ mt_user }}"
+          password: "{{ mt_pass }}"
+          state:     present
+          parameter: community
+          settings:
+            addresses: "0.0.0.0/0"
+            name: icghol
+
+      - name: add second snmp community to remove later
+        mt_snmp:
+          hostname: "{{ mt_hostname }}"
+          username: "{{ mt_user }}"
+          password: "{{ mt_pass }}"
+          state:     present
+          parameter: community
+          settings:
+            addresses: "192.168.1.0/24"
+            name: to_remove
+
+      - name: ALWAYS_CHANGES remove second snmp community
+        mt_snmp:
+          hostname: "{{ mt_hostname }}"
+          username: "{{ mt_user }}"
+          password: "{{ mt_pass }}"
+          state:     absent
+          parameter: community
+          settings:
+            name: to_remove
+        register: snmp_community_rem
+        failed_when: not ( snmp_community_rem | changed )
+
+      - name: ALWAYS_CHANGES modify existing snmp community
+        mt_snmp:
+          hostname: "{{ mt_hostname }}"
+          username: "{{ mt_user }}"
+          password: "{{ mt_pass }}"
+          state:     present
+          parameter: community
+          settings:
+            addresses: "10.0.0.0/8"
+            name: icghol
+        register: snmp_community
+        failed_when: not ( snmp_community | changed )
+
+      - name: NEVER_CHANGES check idempotency on snmp community
+        mt_snmp:
+          hostname: "{{ mt_hostname }}"
+          username: "{{ mt_user }}"
+          password: "{{ mt_pass }}"
+          state:     present
+          parameter: community
+          settings:
+            addresses: "10.0.0.0/8"
+            name: icghol
+        register: snmp_community_idem
+        failed_when: ( snmp_community_idem | changed )
+
+      - name: edit snmp settings
+        mt_snmp:
+          hostname: "{{ mt_hostname }}"
+          username: "{{ mt_user }}"
+          password: "{{ mt_pass }}"
+          parameter: snmp
+          settings:
+            enabled: "yes"
+            trap-community: icghol
+            trap-version: 2
+
+      - name: NEVER_CHANGES edit snmp settings again check idempotency
+        mt_snmp:
+          hostname: "{{ mt_hostname }}"
+          username: "{{ mt_user }}"
+          password: "{{ mt_pass }}"
+          parameter: snmp
+          settings:
+            enabled: "yes"
+            trap-community: icghol
+            trap-version: 2
+        register: snmp_idem
+        failed_when: ( snmp_community_idem | changed )
+
+      - name: ALWAYS_CHANGES check editing snmp
+        mt_snmp:
+          hostname: "{{ mt_hostname }}"
+          username: "{{ mt_user }}"
+          password: "{{ mt_pass }}"
+          parameter: snmp
+          settings:
+            enabled: "yes"
+            trap-community: icghol
+            trap-version: 3
+        register: snmp_edit
+        failed_when: not ( snmp_edit | changed )
+
+      tags: snmp
+
+    ###################
+    ### hotspot
+    ###################
+    - block:
+      - name: add a hotspot profile
+        mt_hotspot:
+          hostname: "{{ mt_hostname }}"
+          username: "{{ mt_user }}"
+          password: "{{ mt_pass }}"
+          state:    present
+          parameter: profile
+          settings:
+            dns-name: internet.com
+            login-by: http-pap
+            name: Hotspot1
+            radius-interim-update: 3m
+            use-radius: "yes"
+
+      - name: NEVER_CHANGES add a hotspot profile, check idempotency
+        mt_hotspot:
+          hostname: "{{ mt_hostname }}"
+          username: "{{ mt_user }}"
+          password: "{{ mt_pass }}"
+          parameter: profile
+          state:    present
+          settings:
+            dns-name: internet.com
+            login-by: http-pap
+            name: Hotspot1
+            radius-interim-update: 3m
+            use-radius: "yes"
+        register: profile_add
+        failed_when: ( profile_add | changed )
+
+      - name: ALWAYS_CHANGES edit a hotspot profile, check changes
+        mt_hotspot:
+          hostname: "{{ mt_hostname }}"
+          username: "{{ mt_user }}"
+          password: "{{ mt_pass }}"
+          parameter: profile
+          state:    present
+          settings:
+            dns-name: internet.com
+            login-by: http-pap
+            name: Hotspot1
+            radius-interim-update: 4m
+            use-radius: "yes"
+        register: profile_edit
+        failed_when: not  ( profile_edit | changed )
+
+      - name: add a hotspot
+        mt_hotspot:
+          hostname: "{{ mt_hostname }}"
+          username: "{{ mt_user }}"
+          password: "{{ mt_pass }}"
+          parameter: hotspot
+          state:    present
+          settings:
+            address-pool: pool1
+            disabled: "no"
+            interface: ether2
+            name: NETACCESS1
+            profile: Hotspot1
+            idle-timeout: 3s
+
+      - name: NEVER_CHANGES add a hotspot again, check idempotency
+        mt_hotspot:
+          hostname: "{{ mt_hostname }}"
+          username: "{{ mt_user }}"
+          password: "{{ mt_pass }}"
+          state:    present
+          parameter: hotspot
+          settings:
+            address-pool: pool1
+            disabled: "no"
+            interface: ether2
+            name: NETACCESS1
+            profile: Hotspot1
+            idle-timeout: 3s
+        register: hotspot_add
+        failed_when: ( hotspot_add | changed )
+
+      - name: ALWAYS_CHANGES edit a hotspot, check changes
+        mt_hotspot:
+          hostname: "{{ mt_hostname }}"
+          username: "{{ mt_user }}"
+          password: "{{ mt_pass }}"
+          state:    present
+          parameter: hotspot
+          settings:
+            address-pool: pool1
+            disabled: "no"
+            interface: ether2
+            name: NETACCESS1
+            profile: Hotspot1
+            idle-timeout: 4s
+        register: hotspot_edit
+        failed_when: not ( hotspot_edit | changed )
+
+      - name: add a walled-garden
+        mt_hotspot:
+          hostname: "{{ mt_hostname }}"
+          username: "{{ mt_user }}"
+          password: "{{ mt_pass }}"
+          state:    present
+          parameter: walled-garden
+          settings:
+            comment: "Allow Personal Web Portal"
+            dst-host: google.com
+            server: NETACCESS1
+            method: PUT
+
+      - name: NEVER_CHANGES add a walled-garden, check idempotency
+        mt_hotspot:
+          hostname: "{{ mt_hostname }}"
+          username: "{{ mt_user }}"
+          password: "{{ mt_pass }}"
+          state:    present
+          parameter: walled-garden
+          settings:
+            comment: "Allow Personal Web Portal"
+            dst-host: google.com
+            server: NETACCESS1
+            method: PUT
+        register: walled_garden_add
+        failed_when: ( walled_garden_add | changed )
+
+      - name: ALWAYS_CHANGES edit walled-garden settings, check changes
+        mt_hotspot:
+          hostname: "{{ mt_hostname }}"
+          username: "{{ mt_user }}"
+          password: "{{ mt_pass }}"
+          state:    present
+          parameter: walled-garden
+          settings:
+            comment: "Allow Personal Web Portal"
+            dst-host: google.com
+            server: NETACCESS1
+            method: TRACE
+        register: walled_garden_edit
+        failed_when: not ( walled_garden_edit | changed )
+
+      - name: ALWAYS_CHANGES remove walled-garden
+        mt_hotspot:
+          hostname: "{{ mt_hostname }}"
+          username: "{{ mt_user }}"
+          password: "{{ mt_pass }}"
+          state:    absent
+          parameter: walled-garden
+          settings:
+            comment: "Allow Personal Web Portal"
+        register: walled_garden_rem
+        failed_when: not ( walled_garden_rem | changed )
+
+      - name: ALWAYS_CHANGES remove a hotspot
+        mt_hotspot:
+          hostname: "{{ mt_hostname }}"
+          username: "{{ mt_user }}"
+          password: "{{ mt_pass }}"
+          parameter: hotspot
+          state:    absent
+          settings:
+            name: NETACCESS1
+        register: hotspot_rem
+        failed_when: not ( hotspot_rem | changed )
+
+      - name: ALWAYS_CHANGES remove a hotspot profile
+        mt_hotspot:
+          hostname: "{{ mt_hostname }}"
+          username: "{{ mt_user }}"
+          password: "{{ mt_pass }}"
+          parameter: profile
+          state:    absent
+          settings:
+            name: Hotspot1
+        register: profile_rem
+        failed_when: not ( profile_rem | changed )
+      tags: hotspot
+
+    ###################
+    ### neighbor
+    ###################
+    - block:
+      - name: edit a interface discovery option
+        mt_neighbor:
+          hostname: "{{ mt_hostname }}"
+          username: "{{ mt_user }}"
+          password: "{{ mt_pass }}"
+          parameter: discovery
+          settings:
+            name: ether2
+            discover: "no"
+
+      - name: NEVER_CHANGES edit a interface discovery option
+        mt_neighbor:
+          hostname: "{{ mt_hostname }}"
+          username: "{{ mt_user }}"
+          password: "{{ mt_pass }}"
+          parameter: discovery
+          settings:
+            name: ether2
+            discover: "no"
+        register: discovery_edit
+        failed_when: ( discovery_edit | changed )
+
+      - name: ALWAYS_CHANGES edit a interface discovery option
+        mt_neighbor:
+          hostname: "{{ mt_hostname }}"
+          username: "{{ mt_user }}"
+          password: "{{ mt_pass }}"
+          parameter: discovery
+          settings:
+            name: ether2
+            discover: "yes"
+        register: discovery_edit
+        failed_when: not ( discovery_edit | changed )
+
+      tags: neighbor
+
+    ###################
+    ### user
+    ###################
+    - block:
+      - name: add a group
+        mt_command:
+          hostname: "{{ mt_hostname }}"
+          username: "{{ mt_user }}"
+          password: "{{ mt_pass }}"
+          command:   /user/group/add
+          command_arguments:
+            name: group_test1
+            policy: read,write,web,!local,!telnet,!ssh
+            comment: ansible_test
+        failed_when: false
+
+      - name: edit group
+        mt_command:
+          hostname: "{{ mt_hostname }}"
+          username: "{{ mt_user }}"
+          password: "{{ mt_pass }}"
+          command:   /user/group/set
+          command_arguments:
+            numbers: 3
+            name: group_test1
+            comment: ansible_test2
+
+      - name: edit group
+        mt_command:
+          hostname: "{{ mt_hostname }}"
+          username: "{{ mt_user }}"
+          password: "{{ mt_pass }}"
+          command:   /user/group/set
+          command_arguments:
+            name: group_test1
+            policy: read,write,web,winbox
+
+      - name: add a test user to mikrotik
+        mt_user:
+          hostname: "{{ mt_hostname }}"
+          username: "{{ mt_user }}"
+          password: "{{ mt_pass }}"
+          parameter: user
+          state:    present
+          settings:
+            name: user_test1
+            group: read
+            password: 123
+        changed_when: False
+
+      - name: NEVER_CHANGES, check idempotency add a user
+        mt_user:
+          hostname: "{{ mt_hostname }}"
+          username: "{{ mt_user }}"
+          password: "{{ mt_pass }}"
+          parameter: user
+          state:    present
+          settings:
+            name: user_test1
+            group: read
+        register: user_add
+        failed_when: ( user_add | changed )
+
+      - name: ALWAYS_CHANGES modify user
+        mt_user:
+          hostname: "{{ mt_hostname }}"
+          username: "{{ mt_user }}"
+          password: "{{ mt_pass }}"
+          parameter: user
+          state:    present
+          settings:
+            name: user_test1
+            group: group_test1
+        register: user_edit
+        failed_when: not ( user_edit | changed )
+
+      - name: ALWAYS_CHANGES remove user
+        mt_user:
+          hostname: "{{ mt_hostname }}"
+          username: "{{ mt_user }}"
+          password: "{{ mt_pass }}"
+          parameter: user
+          state:    absent
+          settings:
+            name: user_test1
+        register: user_rem
+        failed_when: not ( user_rem | changed )
+
+      tags: user
+
+    ###################
+    ### interface wireless
+    ###################
+    - block:
+      - name: edit default security-profiles item
+        mt_interface_wireless:
+          hostname: "{{ mt_hostname }}"
+          username: "{{ mt_user }}"
+          password: "{{ mt_pass }}"
+          parameter: security-profiles
+          state:     present
+          settings:
+            name: test1
+            supplicant-identity: test
+
+      - name: add security-profiles item
+        mt_interface_wireless:
+          hostname: "{{ mt_hostname }}"
+          username: "{{ mt_user }}"
+          password: "{{ mt_pass }}"
+          parameter: security-profiles
+          state:     present
+          settings:
+            name: test1
+            supplicant-identity: test
+            management-protection: required
+
+      - name: NEVER_CHANGES add security-profiles item, check idempotency
+        mt_interface_wireless:
+          hostname: "{{ mt_hostname }}"
+          username: "{{ mt_user }}"
+          password: "{{ mt_pass }}"
+          parameter: security-profiles
+          state:     present
+          settings:
+            name: test1
+            supplicant-identity: test
+        register: security_prof_idem
+        failed_when: ( security_prof_idem | changed )
+
+      - name: ALWAYS_CHANGES add security-profiles item, check idempotency
+        mt_interface_wireless:
+          hostname: "{{ mt_hostname }}"
+          username: "{{ mt_user }}"
+          password: "{{ mt_pass }}"
+          parameter: security-profiles
+          state:     present
+          settings:
+            name: test1
+            supplicant-identity: test
+            management-protection: allowed
+        register: security_prof_edit
+        failed_when: not ( security_prof_edit | changed )
+
+      - name: ALWAYS_CHANGES rem security-profiles item
+        mt_interface_wireless:
+          hostname: "{{ mt_hostname }}"
+          username: "{{ mt_user }}"
+          password: "{{ mt_pass }}"
+          parameter: security-profiles
+          state:     absent
+          settings:
+            name: test1
+        register: security_prof_rem
+        failed_when: not ( security_prof_rem | changed )
+
+      tags: interface-wireless
