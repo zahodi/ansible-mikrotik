@@ -22,13 +22,6 @@ options:
     description:
       - password used for authentication to mikrotik router
     required: True
-  parameter:
-    description:
-      - sub endpoint for mikrotik tool
-    required: True
-    options:
-      - netwatch
-      - e-mail
   rule:
     description:
       - a list containing dictionary parameters.
@@ -40,6 +33,7 @@ options:
     options:
       - filter
       - nat
+      - mangle
   settings:
     description:
       - All Mikrotik compatible parameters for this particular endpoint.

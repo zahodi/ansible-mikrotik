@@ -29,6 +29,7 @@ options:
     options:
       - netwatch
       - e-mail
+      - hotspot
   settings:
     description:
       - All Mikrotik compatible parameters for this particular endpoint.
