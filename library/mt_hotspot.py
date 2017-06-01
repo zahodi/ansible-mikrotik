@@ -72,7 +72,8 @@ def main():
                 choices   = ['present', 'absent'],
                 type      = 'str'
             ),
-        )
+        ),
+    supports_check_mode=True
     )
 
     idempotent_parameter = None
@@ -94,6 +95,7 @@ def main():
         desired_params   = params['settings'],
         idempotent_param = idempotent_parameter,
         api_path         = '/ip/' + str(params['parameter']),
+        check_mode       = module.check_mode,
 
     )
 
