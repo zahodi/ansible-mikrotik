@@ -1975,7 +1975,11 @@
             name: user_test1
             group: read
         register: user_add
-        failed_when: ( user_add | changed )
+        failed_when: (
+            not ansible_check_mode
+          ) and (
+           ( user_add | changed )
+          )
 
       - name: ALWAYS_CHANGES modify user
         mt_user:
@@ -1988,7 +1992,11 @@
             name: user_test1
             group: group_test1
         register: user_edit
-        failed_when: not ( user_edit | changed )
+        failed_when: (
+            not ansible_check_mode
+          ) and (
+            not ( user_edit | changed )
+          )
 
       - name: ALWAYS_CHANGES remove user
         mt_user:
@@ -2000,7 +2008,11 @@
           settings:
             name: user_test1
         register: user_rem
-        failed_when: not ( user_rem | changed )
+        failed_when: (
+            not ansible_check_mode
+          ) and (
+            not ( user_rem | changed )
+          )
 
       tags: user
 
