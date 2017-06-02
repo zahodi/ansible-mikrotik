@@ -71,19 +71,20 @@ from copy import copy
 def main():
 
   module = AnsibleModule(
-      argument_spec=dict(
-          hostname  = dict(required=True),
-          username  = dict(required=True),
-          password  = dict(required=True),
-          rule      = dict(required=False, type='dict'),
-          parameter = dict(required=True, type='str'),
-          state = dict(
-              required  = False,
-              default   = "present",
-              choices   = ['present', 'absent'],
-              type      = 'str'
-          ),
-      )
+    argument_spec=dict(
+      hostname  = dict(required=True),
+      username  = dict(required=True),
+      password  = dict(required=True),
+      rule      = dict(required=False, type='dict'),
+      parameter = dict(required=True, type='str'),
+      state = dict(
+        required  = False,
+        default   = "present",
+        choices   = ['present', 'absent'],
+        type      = 'str'
+      ),
+    ),
+    supports_check_mode=True
   )
 
   hostname     = module.params['hostname']
@@ -92,6 +93,7 @@ def main():
   rule = module.params['rule']
   state        = module.params['state']
   api_path     = '/ip/firewall/' + module.params['parameter']
+  check_mode      = module.check_mode
 # ##############################################
 # Check if "place-before" is an integer
 # #############################################
@@ -99,10 +101,10 @@ def main():
     desired_order = int(rule['place-before'])
   except:
     module.exit_json(
-        failed=True,
-        changed=False,
-        msg="place-before is not set or is not set to an integer",
-      )
+      failed=True,
+      changed=False,
+      msg="place-before is not set or is not set to an integer",
+    )
   changed = False
   msg = ""
 
@@ -153,7 +155,8 @@ def main():
     # if we don't have an existing rule to match
     # the desired we create a new one
     if not current_rule:
-      mk.api_add(api_path, rule)
+      if not check_mode:
+        mk.api_add(api_path, rule)
       changed = True,
     # if current_rule is true we need to ensure the changes
     else:
@@ -176,10 +179,11 @@ def main():
         if current_id is not None:
           out_params['.id'] = current_id
 
-          mk.api_edit(
-              base_path = api_path,
-              params    = out_params
-          )
+          if not check_mode:
+            mk.api_edit(
+                base_path = api_path,
+                params    = out_params
+            )
 
           # we don't need to show the .id in the changed message
           if '.id' in out_params:
@@ -207,7 +211,8 @@ def main():
           'destination': desired_order
           }
         if params:
-          mk.api_command(api_path, params)
+          if not check_mode:
+            mk.api_command(api_path, params)
           changed_msg.append({
               "moved": existing_order,
               "to": old_params,
@@ -219,7 +224,8 @@ def main():
 #####################################
   elif state == "absent":
     if current_rule:
-      mk.api_remove(api_path, current_id)
+      if not check_mode:
+        mk.api_remove(api_path, current_id)
       changed = True
       changed_msg.append("removed rule: " + str(desired_order))
   else:

@@ -805,7 +805,11 @@
               comment: 'Ansible - fw filter rule5'
               place-before: '4'
           register: check_idem
-          failed_when: ( check_idem | changed )
+          failed_when: (
+              not ansible_check_mode
+            ) and (
+              ( check_idem | changed )
+            )
           tags: test-firewall
 
         - name: ALWAYS_CHANGES Test editing existing rule
@@ -823,7 +827,11 @@
               src-address: 192.168.0.0/16
               place-before: '3'
           register: edit_filter_rule
-          failed_when: not ( edit_filter_rule | changed )
+          failed_when: (
+              not ansible_check_mode
+            ) and (
+              not ( edit_filter_rule | changed )
+            )
 
         - name: NEVER_CHANGES Test editing existing rule check idempotency again
           mt_ip_firewall:
@@ -840,7 +848,11 @@
               src-address: 192.168.0.0/16
               place-before: '3'
           register: edit_filter_rule_2
-          failed_when: ( edit_filter_rule_2 | changed )
+          failed_when: (
+              not ansible_check_mode
+            ) and (
+              ( edit_filter_rule_2 | changed )
+            )
           tags: test-firewall
 
         - name: add a rule to the bottom of the chain
@@ -873,7 +885,11 @@
               src-address: 192.150.0.0/16
               place-before: '20'
           register: edit_filter_rule_3
-          failed_when: not ( edit_filter_rule_3 | changed )
+          failed_when: (
+              not ansible_check_mode
+            ) and (
+              not ( edit_filter_rule_3 | changed )
+            )
 
         - name: NEVER_CHANGES add a rule to the bottom of the chain, check_idempotency
           mt_ip_firewall:
@@ -890,7 +906,11 @@
               src-address: 192.150.0.0/16
               place-before: '20'
           register: edit_filter_rule_4
-          failed_when: ( edit_filter_rule_4 | changed )
+          failed_when: (
+              not ansible_check_mode
+            ) and (
+              ( edit_filter_rule_4 | changed )
+            )
 
         - name: ALWAYS_CHANGES Test removing existing rule
           mt_ip_firewall:
@@ -903,7 +923,11 @@
           with_items:
             - place-before: '4'
           register: rem_filter_rule
-          failed_when: not ( rem_filter_rule | changed )
+          failed_when: (
+              not ansible_check_mode
+            ) and (
+              not ( rem_filter_rule | changed )
+            )
 
         tags: firewall-filter
       ###################
