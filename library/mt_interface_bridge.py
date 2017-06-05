@@ -107,40 +107,40 @@ from ansible.module_utils.basic import AnsibleModule
 
 
 def main():
-
   module = AnsibleModule(
-      argument_spec=dict(
-          hostname       = dict(required=True),
-          username       = dict(required=True),
-          password       = dict(required=True),
-          name           = dict(required=False, type='str'),
-          comment        = dict(required=False, type='str'),
-          admin_mac      = dict(required=False, type='str'),
-          auto_mac       = dict(required=False, type='str'),
-          ageing_time    = dict(required=False, type='str'),
-          forward_delay  = dict(required=False, type='str'),
-          max_message_age=dict(required=False, type='str'),
-          transmit_hold_count=dict(required=False, type='str'),
-          arp      = dict(
-            required = False,
-            choices   = ['disabled', 'enabled', 'proxy-arp', 'reply-only'],
-            type='str'
-          ),
-          protocol_mode= dict(
-            required  = False,
-            choices   = ['none', 'rstp', 'stp'],
-            type='str'
-          ),
-          settings= dict(
-            required  = False,
-            type='dict'
-          ),
-          state= dict(
-            required  = False,
-            choices   = ['present', 'absent'],
-            type      = 'str'
-          ),
-      )
+    argument_spec=dict(
+      hostname       = dict(required=True),
+      username       = dict(required=True),
+      password       = dict(required=True),
+      name           = dict(required=False, type='str'),
+      comment        = dict(required=False, type='str'),
+      admin_mac      = dict(required=False, type='str'),
+      auto_mac       = dict(required=False, type='str'),
+      ageing_time    = dict(required=False, type='str'),
+      forward_delay  = dict(required=False, type='str'),
+      max_message_age=dict(required=False, type='str'),
+      transmit_hold_count=dict(required=False, type='str'),
+      arp      = dict(
+        required = False,
+        choices   = ['disabled', 'enabled', 'proxy-arp', 'reply-only'],
+        type='str'
+      ),
+      protocol_mode= dict(
+        required  = False,
+        choices   = ['none', 'rstp', 'stp'],
+        type='str'
+      ),
+      settings= dict(
+        required  = False,
+        type='dict'
+      ),
+      state= dict(
+        required  = False,
+        choices   = ['present', 'absent'],
+        type      = 'str'
+      ),
+    ),
+    supports_check_mode=True
   )
 
   hostname     = module.params['hostname']
@@ -148,6 +148,7 @@ def main():
   password     = module.params['password']
   state        = module.params['state']
   ansible_bridge_name  = module.params['name']
+  check_mode = module.check_mode
   changed = False
   changed_message = []
   msg = ""
@@ -199,7 +200,8 @@ def main():
         bridge_settings_diff_keys[key] = settings[key]
 
     if bridge_settings_diff_keys != {}:
-      mk.api_edit(base_path=settings_path, params=bridge_settings_diff_keys)
+      if not check_mode:
+        mk.api_edit(base_path=settings_path, params=bridge_settings_diff_keys)
       changed_message.append(bridge_settings_diff_keys)
       changed = True
     else:
@@ -227,10 +229,11 @@ def main():
   ###################################################################
   if (state == "present" and isinstance(ansible_bridge_name, str)):
     if mikrotik_bridge == {}:
-      mk.api_add(
-          base_path=bridge_path,
-          params=bridge_params
-      )
+      if not check_mode:
+        mk.api_add(
+            base_path=bridge_path,
+            params=bridge_params
+        )
       changed_message.append(ansible_bridge_name + " added")
       changed = True,
     else:
@@ -244,7 +247,8 @@ def main():
           bridge_diff_keys[key] = bridge_params[key]
       if bridge_diff_keys != {}:
         bridge_diff_keys['numbers'] = client_id
-        mk.api_edit(base_path=bridge_path, params=bridge_diff_keys)
+        if not check_mode:
+          mk.api_edit(base_path=bridge_path, params=bridge_diff_keys)
         changed = True
         changed_message.append("Changed bridge: " + bridge_params['name'])
       else:
@@ -256,7 +260,8 @@ def main():
 
   elif state == "absent":
     if client_id:
-      mk.api_remove(base_path=bridge_path, remove_id=client_id)
+      if not check_mode:
+        mk.api_remove(base_path=bridge_path, remove_id=client_id)
       changed_message.append(bridge_params['name'] + " removed")
       changed = True
     #####################################################

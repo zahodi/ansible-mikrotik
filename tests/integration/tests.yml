@@ -1252,7 +1252,11 @@
         with_items:
           - "bridge1"
         register: mod_bridge1
-        failed_when: ( mod_bridge1 | changed )
+        failed_when: (
+            not ansible_check_mode
+          ) and (
+            ( mod_bridge1 | changed )
+          )
 
       # bridge ports depend on bridge being created first
 
@@ -1280,7 +1284,11 @@
           - [ "bridge1" ]
           - [ "ether8" ]
         register: mod_bridge1_port
-        failed_when: ( mod_bridge1_port | changed )
+        failed_when: (
+            not ansible_check_mode
+          ) and (
+            ( mod_bridge1_port | changed )
+          )
 
       - name: Add additional param to bridge port
         mt_interface_bridge_port:
@@ -1308,7 +1316,11 @@
           - [ "bridge1" ]
           - [ "ether7" ]
         register: bridge1_add_2nd_inter
-        failed_when: not ( bridge1_add_2nd_inter | changed )
+        failed_when: (
+            not ansible_check_mode
+          ) and (
+            not ( bridge1_add_2nd_inter | changed )
+          )
 
       - name: ALWAYS_CHANGES Remove 2nd interface to bridge1 port
         mt_interface_bridge_port:
@@ -1322,7 +1334,11 @@
           - [ "bridge1" ]
           - [ "ether7" ]
         register: bridge1_rem_2nd_inter
-        failed_when: not ( bridge1_rem_2nd_inter | changed )
+        failed_when: (
+            not ansible_check_mode
+          ) and (
+            not ( bridge1_rem_2nd_inter | changed )
+          )
 
       - name: Add bridge2
         mt_interface_bridge:
@@ -1359,7 +1375,11 @@
             use-ip-firewall-for-vlan: no
             use-ip-firewall-for-pppoe: no
         register: bridge_settings_1
-        failed_when: not ( bridge_settings_1 | changed )
+        failed_when: (
+            not ansible_check_mode
+          ) and (
+            not ( bridge_settings_1 | changed )
+          )
 
       - name: Adjust settings again (idempotency test)
         mt_interface_bridge:
@@ -1372,7 +1392,11 @@
             use-ip-firewall-for-vlan: no
             use-ip-firewall-for-pppoe: no
         register: bridge_settings_2
-        failed_when: ( bridge_settings_2 | changed )
+        failed_when: (
+            not ansible_check_mode
+          ) and (
+            ( bridge_settings_2 | changed )
+          )
 
       tags: bridge
 
