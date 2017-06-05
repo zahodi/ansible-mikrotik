@@ -1984,7 +1984,11 @@
             name: ether2
             discover: "no"
         register: discovery_edit
-        failed_when: ( discovery_edit | changed )
+        failed_when: (
+            not ansible_check_mode
+          ) and (
+           ( discovery_edit | changed )
+          )
 
       - name: ALWAYS_CHANGES edit a interface discovery option
         mt_neighbor:
@@ -1996,7 +2000,11 @@
             name: ether2
             discover: "yes"
         register: discovery_edit
-        failed_when: not ( discovery_edit | changed )
+        failed_when: (
+            not ansible_check_mode
+          ) and (
+           not ( discovery_edit | changed )
+          )
 
       tags: neighbor
 
