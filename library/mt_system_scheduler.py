@@ -70,31 +70,32 @@ from ansible.module_utils.basic import AnsibleModule
 
 
 def main():
-
   module = AnsibleModule(
-      argument_spec=dict(
-          hostname  =dict(required=True),
-          username  =dict(required=True),
-          password  =dict(required=True),
-          name      =dict(required=True, type='str'),
-          on_event  =dict(required=False, type='str'),
-          comment   =dict(required=False, type='str'),
-          interval  =dict(required=False, type='str'),
-          policy    =dict(required=False, type='list'),
-          start_date=dict(required=False, type='str'),
-          start_time=dict(required=False, type='str'),
-          state=dict(
-            required=True,
-            choices=['present', 'absent'],
-            type='str'
-          ),
-      )
+    argument_spec=dict(
+      hostname  =dict(required=True),
+      username  =dict(required=True),
+      password  =dict(required=True),
+      name      =dict(required=True, type='str'),
+      on_event  =dict(required=False, type='str'),
+      comment   =dict(required=False, type='str'),
+      interval  =dict(required=False, type='str'),
+      policy    =dict(required=False, type='list'),
+      start_date=dict(required=False, type='str'),
+      start_time=dict(required=False, type='str'),
+      state=dict(
+        required=True,
+        choices=['present', 'absent'],
+        type='str'
+      ),
+    ),
+    supports_check_mode=True
   )
 
   hostname     = module.params['hostname']
   username     = module.params['username']
   password     = module.params['password']
   state        = module.params['state']
+  check_mode   = module.check_mode
   ansible_scheduler_name  = module.params['name']
   changed = False
   changed_message = []
@@ -149,10 +150,11 @@ def main():
         list_to_string = ""
         list_to_string = ','.join(map(str, ansible_scheduler_params['policy']))
         ansible_scheduler_params['policy'] = list_to_string
-      mk.api_add(
-          base_path=api_path,
-          params=ansible_scheduler_params
-      )
+      if not check_mode:
+        mk.api_add(
+            base_path=api_path,
+            params=ansible_scheduler_params
+        )
       changed_message.append(ansible_scheduler_name + " added to bridge")
       changed = True,
     else:
@@ -187,7 +189,8 @@ def main():
             scheduler_diff_keys[key] = ansible_scheduler_params[key]
       if scheduler_diff_keys != {}:
         scheduler_diff_keys['numbers'] = client_id
-        mk.api_edit(base_path=api_path, params=scheduler_diff_keys)
+        if not check_mode:
+          mk.api_edit(base_path=api_path, params=scheduler_diff_keys)
         changed = True
         changed_message.append(
           "Changed scheduler task : " + ansible_scheduler_params['name']
@@ -201,7 +204,8 @@ def main():
 
   elif state == "absent":
     if client_id:
-      mk.api_remove(base_path=api_path, remove_id=client_id)
+      if not check_mode:
+        mk.api_remove(base_path=api_path, remove_id=client_id)
       changed_message.append(ansible_scheduler_params['name'] + " removed")
       changed = True
     #####################################################

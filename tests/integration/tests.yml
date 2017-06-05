@@ -1449,7 +1449,11 @@
             - sniff
             - write
         register: scheduler_mod
-        failed_when: not ( scheduler_mod | changed )
+        failed_when: (
+            not ansible_check_mode
+          ) and (
+            not ( scheduler_mod | changed )
+          )
 
       - name: NEVER_CHANGES add duplicate scheduler
         mt_system_scheduler:
@@ -1465,7 +1469,11 @@
             - sniff
             - write
         register: scheduler_dup
-        failed_when: ( scheduler_dup | changed )
+        failed_when: (
+            not ansible_check_mode
+          ) and (
+            ( scheduler_dup | changed )
+          )
 
       - name: ALWAYS_CHANGES remove duplicate scheduler
         mt_system_scheduler:
@@ -1475,7 +1483,11 @@
           state:    absent
           name:     ansible_test
         register: scheduler_rem
-        failed_when: not ( scheduler_rem | changed )
+        failed_when: (
+            not ansible_check_mode
+          ) and (
+            not ( scheduler_rem | changed )
+          )
 
       tags: scheduler
 
