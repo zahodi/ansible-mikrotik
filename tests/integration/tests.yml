@@ -1632,7 +1632,11 @@
           settings:
             name: to_remove
         register: snmp_community_rem
-        failed_when: not ( snmp_community_rem | changed )
+        failed_when: (
+            not ansible_check_mode
+          ) and (
+            not ( snmp_community_rem | changed )
+          )
 
       - name: ALWAYS_CHANGES modify existing snmp community
         mt_snmp:
@@ -1645,7 +1649,11 @@
             addresses: "10.0.0.0/8"
             name: icghol
         register: snmp_community
-        failed_when: not ( snmp_community | changed )
+        failed_when: (
+            not ansible_check_mode
+          ) and (
+            not ( snmp_community | changed )
+          )
 
       - name: NEVER_CHANGES check idempotency on snmp community
         mt_snmp:
@@ -1658,7 +1666,11 @@
             addresses: "10.0.0.0/8"
             name: icghol
         register: snmp_community_idem
-        failed_when: ( snmp_community_idem | changed )
+        failed_when: (
+            not ansible_check_mode
+          ) and (
+            ( snmp_community_idem | changed )
+          )
 
       - name: edit snmp settings
         mt_snmp:
@@ -1682,7 +1694,11 @@
             trap-community: icghol
             trap-version: 2
         register: snmp_idem
-        failed_when: ( snmp_community_idem | changed )
+        failed_when: (
+            not ansible_check_mode
+          ) and (
+            ( snmp_idem | changed )
+          )
 
       - name: ALWAYS_CHANGES check editing snmp
         mt_snmp:
@@ -1695,7 +1711,11 @@
             trap-community: icghol
             trap-version: 3
         register: snmp_edit
-        failed_when: not ( snmp_edit | changed )
+        failed_when: (
+            not ansible_check_mode
+          ) and (
+            not ( snmp_edit | changed )
+          )
 
       tags: snmp
 
