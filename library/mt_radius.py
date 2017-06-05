@@ -207,7 +207,8 @@ def main():
   #######################################################
   if state == "present":
     if mikrotik_radius == {}:
-      mk.api_add(base_path=radius_path, params=radius_params)
+      if not check_mode:
+        mk.api_add(base_path=radius_path, params=radius_params)
       module.exit_json(
           failed=False,
           changed=True,
@@ -224,7 +225,8 @@ def main():
           radius_diff_keys[key] = radius_params[key]
       if radius_diff_keys != {}:
         radius_diff_keys['numbers'] = radius_id
-        mk.api_edit(base_path=radius_path, params=radius_diff_keys)
+        if not check_mode:
+          mk.api_edit(base_path=radius_path, params=radius_diff_keys)
         module.exit_json(
             failed=False,
             changed=True,
@@ -239,7 +241,8 @@ def main():
         )
   elif state == "absent":
     if radius_id:
-      mk.api_remove(base_path=radius_path, remove_id=radius_id)
+      if not check_mode:
+        mk.api_remove(base_path=radius_path, remove_id=radius_id)
       module.exit_json(
           failed=False,
           changed=True,
