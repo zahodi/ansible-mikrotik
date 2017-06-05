@@ -27,8 +27,8 @@ options:
       - sub endpoint for mikrotik snmp
     required: True
     options:
-      - netwatch
-      - e-mail
+      - community
+      - snmp
   settings:
     description:
       - All Mikrotik compatible parameters for this particular endpoint.
@@ -43,10 +43,10 @@ EXAMPLES = '''
     hostname:    "{{ inventory_hostname }}"
     username:    "{{ mt_user }}"
     password:    "{{ mt_pass }}"
-    parameter:   e-mail
+    parameter:   community
     settings:
-      address: 192.168.1.1
-      from:    foo@bar.com
+      addresses: "192.168.1.0/24"
+      name: ansible_managed
 '''
 
 from mt_common import clean_params, MikrotikIdempotent
