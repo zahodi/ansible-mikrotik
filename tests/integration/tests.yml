@@ -181,66 +181,94 @@
     ###################
     - block:
       - name: Test adding ip pool
-        mt_ip_pool:
+        mt_ip:
           hostname: "{{ mt_hostname }}"
           username: "{{ mt_user }}"
           password: "{{ mt_pass }}"
           state:       present
-          name: ansible_test
-          ranges: 102.3.4.5
+          parameter: pool
+          settings:
+            name: ansible_test
+            ranges: 102.3.4.5
 
       - name: NEVER_CHANGES Test adding duplicate ip pool
-        mt_ip_pool:
+        mt_ip:
           hostname: "{{ mt_hostname }}"
           username: "{{ mt_user }}"
           password: "{{ mt_pass }}"
           state:       present
-          name: ansible_test
-          ranges: 102.3.4.5
+          parameter: pool
+          settings:
+            name: ansible_test
+            ranges: 102.3.4.5
         register: ip_pool_test_1_add
-        failed_when: ( ip_pool_test_1_add | changed )
+        failed_when: (
+            not ansible_check_mode
+          ) and (
+            ( ip_pool_test_1_add | changed )
+          )
 
       - name: ALWAYS_CHANGES Test adding second ip pool to be removed later
-        mt_ip_pool:
+        mt_ip:
           hostname: "{{ mt_hostname }}"
           username: "{{ mt_user }}"
           password: "{{ mt_pass }}"
           state:       present
-          name: ansible_test2
-          ranges: 102.3.4.22
+          parameter: pool
+          settings:
+            name: ansible_test2
+            ranges: 102.3.4.22
         register: ip_pool_test_2_add
-        failed_when: not ( ip_pool_test_2_add | changed )
+        failed_when: (
+            not ansible_check_mode
+          ) and (
+            not ( ip_pool_test_2_add | changed )
+          )
 
       - name: Test adding ip pool to be used as next_pool
-        mt_ip_pool:
+        mt_ip:
           hostname: "{{ mt_hostname }}"
           username: "{{ mt_user }}"
           password: "{{ mt_pass }}"
           state:       present
-          name: next_pool1
-          ranges: 10.1.2.30-10.2.3.40
+          parameter: pool
+          settings:
+            name: next_pool1
+            ranges: 10.1.2.30-10.2.3.40
 
       - name: ALWAYS_CHANGES Test editing an existing ip-pool item (change ranges add next_pool)
-        mt_ip_pool:
+        mt_ip:
           hostname: "{{ mt_hostname }}"
           username: "{{ mt_user }}"
           password: "{{ mt_pass }}"
           state:       present
-          name: ansible_test
-          ranges: 102.3.4.6
-          next_pool: next_pool1
+          parameter: pool
+          settings:
+            name: ansible_test
+            ranges: 102.3.4.6
+            next_pool: next_pool1
         register: ip_pool_test_1_edit
-        failed_when: not ( ip_pool_test_1_edit | changed )
+        failed_when: (
+            not ansible_check_mode
+          ) and (
+            not ( ip_pool_test_1_edit | changed )
+          )
 
       - name: ALWAYS_CHANGES Test remove ip pool
-        mt_ip_pool:
+        mt_ip:
           hostname: "{{ mt_hostname }}"
           username: "{{ mt_user }}"
           password: "{{ mt_pass }}"
           state:       absent
-          name: ansible_test2
+          parameter: pool
+          settings:
+            name: ansible_test2
         register: ip_pool_test_2_rem
-        failed_when: not ( ip_pool_test_2_rem | changed )
+        failed_when: (
+            not ansible_check_mode
+          ) and (
+            not ( ip_pool_test_2_rem | changed )
+          )
 
       tags: ip-pool
     ##################
@@ -248,7 +276,7 @@
     ###################
     - block:
       - name: Test adding ip pool to be used by dhcp_server
-        mt_ip_pool:
+        mt_ip:
           hostname: "{{ mt_hostname }}"
           username: "{{ mt_user }}"
           password: "{{ mt_pass }}"
@@ -1113,35 +1141,45 @@
     ###################
     - block:
       - name: Test enabling ftp service
-        mt_service:
+        mt_ip:
           hostname: "{{ mt_hostname }}"
           username: "{{ mt_user }}"
           password: "{{ mt_pass }}"
-          disabled: no
-          name:     ftp
-          address:  192.168.50.1/32
+          parameter: service
+          settings:
+            disabled: "no"
+            name:     ftp
+            address:  192.168.50.1/32
 
       - name: Test disabling services
-        mt_service:
+        mt_ip:
           hostname: "{{ mt_hostname }}"
           username: "{{ mt_user }}"
           password: "{{ mt_pass }}"
-          disabled: yes
-          name: "{{ item }}"
+          parameter: service
+          settings:
+            disabled: "yes"
+            name: "{{ item }}"
         with_items:
           - ftp
           - telnet
           - api-ssl
 
       - name: ALWAYS_CHANGES Test re-enabling telnet service
-        mt_service:
+        mt_ip:
           hostname: "{{ mt_hostname }}"
           username: "{{ mt_user }}"
           password: "{{ mt_pass }}"
-          disabled: no
-          name:     telnet
+          parameter: service
+          settings:
+            disabled: "no"
+            name:     telnet
         register: enable_telnet
-        failed_when: not ( enable_telnet | changed )
+        failed_when: (
+            not ansible_check_mode
+          ) and (
+            not ( enable_telnet | changed )
+          )
       tags: service
 
     ###################
