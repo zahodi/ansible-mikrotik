@@ -66,7 +66,7 @@ def main():
       settings=dict(required=True, type='dict'),
       parameter = dict(
           required  = True,
-          choices   = ['ethernet', 'vlan'],
+          choices   = ['ethernet', 'vlan', 'ovpn-client'],
           type      = 'str'
       ),
       state   = dict(
@@ -89,7 +89,7 @@ def main():
     desired_params   = params['settings'],
     idempotent_param = idempotent_parameter,
     api_path         = '/interface/' + str(params['parameter']),
-    check_mode      = module.check_mode,
+    check_mode       = module.check_mode
   )
 
   # exit if login failed
