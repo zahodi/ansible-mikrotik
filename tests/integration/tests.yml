@@ -610,7 +610,11 @@
             - address: 192.168.1.6
               comment: test_comment3
         register: address_list_add_1
-        failed_when: not ( address_list_add_1 | changed )
+        failed_when: (
+            not ansible_check_mode
+          ) and (
+            not ( address_list_add_1 | changed )
+          )
 
       - name: ALWAYS_CHANGES Test editing a firewall address-list
         mt_ip_firewall_addresslist:
@@ -626,8 +630,12 @@
               comment: dns2
             - address: 192.168.1.19
               comment: test_comment3
-        register: editress_list_edit_1
-        failed_when: not ( editress_list_edit_1 | changed )
+        register: address_list_edit_1
+        failed_when: (
+            not ansible_check_mode
+          ) and (
+            not ( address_list_edit_1 | changed )
+          )
 
       - name: Test adding a duplicate address-list
         mt_ip_firewall_addresslist:
@@ -643,8 +651,12 @@
               comment: dns2
             - address: 192.168.1.19
               comment: test_comment3
-        register: add_dupress_list_add_dup_1
-        failed_when: ( add_dupress_list_add_dup_1 | changed )
+        register: add_address_list_add_dup_1
+        failed_when: (
+            not ansible_check_mode
+          ) and (
+            ( add_address_list_add_dup_1 | changed )
+          )
 
       - name: ALWAYS_CHANGES Test removing a firewall address-list
         mt_ip_firewall_addresslist:
@@ -653,11 +665,14 @@
           password:   "{{ mt_pass }}"
           state:      "absent"
           list_name: test_list
-        register: remress_list_rem_1
-        failed_when: not ( remress_list_rem_1 | changed )
+        register: address_list_rem_1
+        failed_when: (
+            not ansible_check_mode
+          ) and (
+            not ( address_list_rem_1 | changed )
+          )
 
-      tags: address_list
-
+      tags: address-list
 
 
     ###################

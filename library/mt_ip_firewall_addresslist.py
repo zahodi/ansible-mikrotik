@@ -54,19 +54,20 @@ from ansible.module_utils.basic import AnsibleModule
 def main():
 
   module = AnsibleModule(
-      argument_spec=dict(
-          hostname  = dict(required=True),
-          username  = dict(required=True),
-          password  = dict(required=True),
-          list_name  = dict(required=True, type='str'),
-          address_list = dict(required=False, type='list'),
-          state = dict(
-              required  = False,
-              default   = "present",
-              choices   = ['present', 'absent', 'force'],
-              type      = 'str'
-          ),
-      )
+    argument_spec=dict(
+      hostname  = dict(required=True),
+      username  = dict(required=True),
+      password  = dict(required=True),
+      list_name  = dict(required=True, type='str'),
+      address_list = dict(required=False, type='list'),
+      state = dict(
+        required  = False,
+        default   = "present",
+        choices   = ['present', 'absent', 'force'],
+        type      = 'str'
+      ),
+    ),
+    supports_check_mode=True
   )
 
   hostname     = module.params['hostname']
@@ -75,6 +76,7 @@ def main():
   ansible_list_name = module.params['list_name']
   ansible_address_list = module.params['address_list']
   state        = module.params['state']
+  check_mode   = module.check_mode
   changed      = False
   msg = ""
 
@@ -84,8 +86,8 @@ def main():
     mk.login()
   except:
     module.fail_json(
-        msg="Could not log into Mikrotik device." +
-        " Check the username and password.",
+      msg="Could not log into Mikrotik device." +
+      " Check the username and password.",
     )
 
   response = mk.api_print(address_list_path)
@@ -106,9 +108,9 @@ def main():
   if state == "present":
     if ansible_address_list == mikrotik_address_list:
       module.exit_json(
-          changed = False,
-          failed  = False,
-          msg     = "list up to date",
+        changed = False,
+        failed  = False,
+        msg     = "list up to date",
       )
     common_list = []
     for item in ansible_address_list:
@@ -141,7 +143,8 @@ def main():
         "list": list_name,
         "comment": i['comment']
       }
-      mk.api_add(address_list_path, add_dictionary)
+      if not check_mode:
+        mk.api_add(address_list_path, add_dictionary)
       changed = True
 
     #####################
@@ -156,7 +159,8 @@ def main():
     #######################################
     for i in remove_list:
       remove_id = mikrotik_address_id[i]
-      mk.api_remove(address_list_path, remove_id)
+      if not check_mode:
+        mk.api_remove(address_list_path, remove_id)
       if not changed:
         changed = True
   else:
@@ -164,21 +168,22 @@ def main():
     # Remove every item
     #######################################
     for remove_id in mikrotik_address_id.values():
-      mk.api_remove(address_list_path, remove_id)
+      if not check_mode:
+        mk.api_remove(address_list_path, remove_id)
       if not changed:
         changed = True
 
   if changed:
-     module.exit_json(
-         changed = True,
-         failed = False,
-         msg    = ansible_list_name + "has been modified",
+    module.exit_json(
+      changed = True,
+      failed = False,
+      msg    = ansible_list_name + "has been modified",
      )
   else:
     module.exit_json(
-        changed = False,
-        failed = False,
-        msg    = ansible_list_name + " is up to date",
+      changed = False,
+      failed = False,
+      msg    = ansible_list_name + " is up to date",
     )
 
 
