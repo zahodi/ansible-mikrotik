@@ -1432,7 +1432,11 @@
           settings:
             time-zone-name: GMT
         register: mt_clock
-        failed_when: not ( mt_clock | changed )
+        failed_when: (
+            not ansible_check_mode
+          ) and (
+            not ( mt_clock | changed )
+          )
 
       - name: set ntp client
         mt_system:
@@ -1456,7 +1460,11 @@
             primary-ntp: 199.182.221.11
             secondary-ntp: 67.215.197.149
         register: mt_ntp_client
-        failed_when: ( mt_ntp_client | changed )
+        failed_when: (
+            not ansible_check_mode
+          ) and (
+            ( mt_ntp_client | changed )
+          )
 
       - name: ALWAYS_CHANGES modify ntp client
         mt_system:
@@ -1469,7 +1477,11 @@
             primary-ntp: 199.182.221.11
             secondary-ntp: 67.215.197.149
         register: mt_ntp_client_change
-        failed_when: not ( mt_ntp_client_change | changed )
+        failed_when: (
+            not ansible_check_mode
+          ) and (
+            not ( mt_ntp_client_change | changed )
+          )
 
       ##############################################
       # WIP
