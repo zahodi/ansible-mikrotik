@@ -140,7 +140,11 @@
                 name:     ether1
                 comment:  Ansible controlled ether1
           register: ether1_comment
-          failed_when: ( ether1_comment | changed )
+          failed_when: (
+              not ansible_check_mode
+            ) and (
+              ( ether1_comment | changed )
+            )
 
         - name: USUALLY_CHANGES Modify mtu of ether2
           mt_interfaces:
@@ -281,8 +285,10 @@
           username: "{{ mt_user }}"
           password: "{{ mt_pass }}"
           state:    present
-          name:     pool1
-          ranges:   102.3.4.5
+          parameter: pool
+          settings:
+            name:     pool1
+            ranges:   102.3.4.5
 
       - name: Test adding a dhcp_server
         mt_dhcp_server:
@@ -312,7 +318,11 @@
             use-radius:    "yes"
             authoritative: after-10sec-delay
         register: dhcp_server_test_1_edit
-        failed_when: not ( dhcp_server_test_1_edit | changed )
+        failed_when: (
+            not ansible_check_mode
+          ) and (
+            not ( dhcp_server_test_1_edit | changed )
+          )
 
       - name: NEVER_CHANGES Test adding a duplicate of the first dhcp server
         mt_dhcp_server:
@@ -327,7 +337,11 @@
             interface:    ether1
             use-radius:   "yes"
         register: dhcp_server_test_1_duplicate
-        failed_when: ( dhcp_server_test_1_duplicate|changed )
+        failed_when: (
+            not ansible_check_mode
+          ) and (
+            ( dhcp_server_test_1_duplicate|changed )
+          )
 
       - name: ALWAYS_CHANGES Test adding another dhcp server to later remove
         mt_dhcp_server:
@@ -340,7 +354,11 @@
             interface:  "ether5"
             name:       "ansible_test_2"
         register: dhcp_server_test_2
-        failed_when: not ( dhcp_server_test_2 | changed )
+        failed_when: (
+            not ansible_check_mode
+          ) and (
+            not ( dhcp_server_test_2 | changed )
+          )
 
       - name: ALWAYS_CHANGES Test removing a dhcp server
         mt_dhcp_server:
@@ -352,7 +370,11 @@
           settings:
             name:       "ansible_test_2"
         register: dhcp_server_test_2_rem
-        failed_when: not ( dhcp_server_test_2_rem | changed )
+        failed_when: (
+            not ansible_check_mode
+          ) and (
+            not ( dhcp_server_test_2_rem | changed )
+          )
 
       - name: add a dhcp-server network
         mt_dhcp_server:
@@ -390,7 +412,11 @@
             dns-server: 10.147.172.20
             gateway: 10.147.172.1
         register: dhcp_network_mod
-        failed_when: not ( dhcp_network_mod | changed )
+        failed_when: (
+            not ansible_check_mode
+          ) and (
+            not ( dhcp_network_mod | changed )
+          )
 
       - name: ALWAYS_CHANGES remove first dhcp-server network
         mt_dhcp_server:
@@ -402,7 +428,11 @@
           settings:
             address: '192.168.10.0/24'
         register: dhcp_network_rem
-        failed_when: not ( dhcp_network_rem | changed )
+        failed_when: (
+            not ansible_check_mode
+          ) and (
+            not ( dhcp_network_rem | changed )
+          )
 
       - name: Test adding an item to dhcp-server options
         mt_dhcp_server:
@@ -1156,7 +1186,11 @@
               comment: 'Ansible - fw filter rule20'
               place-before: '19'
           register: nat_idem
-          failed_when: ( nat_idem | changed )
+          failed_when: (
+              not ansible_check_mode
+            ) and (
+              ( nat_idem | changed )
+            )
 
         - name: ALWAYS_CHANGES, change rule
           mt_ip_firewall:
@@ -1173,7 +1207,11 @@
               place-before: '3'
               src-address: 192.165.0.0/16
           register: nat_change
-          failed_when: not ( nat_change | changed )
+          failed_when: (
+              not ansible_check_mode
+            ) and (
+              not ( nat_change | changed )
+            )
 
         - name: ALWAYS_CHANGES, remove rule
           mt_ip_firewall:
@@ -1186,7 +1224,11 @@
           with_items:
             - place-before: '4'
           register: nat_rem
-          failed_when: not ( nat_rem | changed )
+          failed_when: (
+              not ansible_check_mode
+            ) and (
+              not ( nat_rem | changed )
+            )
 
         tags: firewall-nat
 
