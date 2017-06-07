@@ -96,44 +96,44 @@ from ansible.module_utils.basic import AnsibleModule
 
 
 def main():
-
   module = AnsibleModule(
-      argument_spec=dict(
-          hostname    =dict(required=True),
-          username    =dict(required=True),
-          password    =dict(required=True),
-          interface   =dict(required=True, type='str'),
-          bridge =dict(required=False, type='str'),
-          comment     =dict(required=False, type='str'),
-          path_cost   =dict(required=False, type='str'),
-          priority    =dict(required=False, type='str'),
-          horizon     =dict(required=False, type='str'),
-          external_fdb=dict(
-            required=False,
-            choices=['yes', 'no', 'auto'],
-            type='str'
-          ),
-          auto_isolate=dict(
-            required=False,
-            choices=['yes', 'no'],
-            type='str'
-          ),
-          edge=dict(
-            required=False,
-            choices=['auto', 'yes', 'no', 'no-discover', 'yes-discover'],
-            type='str'
-          ),
-          point_to_point=dict(
-            required=False,
-            choices=['yes', 'no', 'auto'],
-            type='str'
-          ),
-          state=dict(
-            required=True,
-            choices=['present', 'absent'],
-            type='str'
-          ),
-      )
+    argument_spec=dict(
+      hostname    =dict(required=True),
+      username    =dict(required=True),
+      password    =dict(required=True),
+      interface   =dict(required=True, type='str'),
+      bridge =dict(required=False, type='str'),
+      comment     =dict(required=False, type='str'),
+      path_cost   =dict(required=False, type='str'),
+      priority    =dict(required=False, type='str'),
+      horizon     =dict(required=False, type='str'),
+      external_fdb=dict(
+        required=False,
+        choices=['yes', 'no', 'auto'],
+        type='str'
+      ),
+      auto_isolate=dict(
+        required=False,
+        choices=['yes', 'no'],
+        type='str'
+      ),
+      edge=dict(
+        required=False,
+        choices=['auto', 'yes', 'no', 'no-discover', 'yes-discover'],
+        type='str'
+      ),
+      point_to_point=dict(
+        required=False,
+        choices=['yes', 'no', 'auto'],
+        type='str'
+      ),
+      state=dict(
+        required=True,
+        choices=['present', 'absent'],
+        type='str'
+      ),
+    ),
+    supports_check_mode=True
   )
 
   hostname     = module.params['hostname']
@@ -143,6 +143,7 @@ def main():
   ansible_bridge_port_interface  = module.params['interface']
   changed = False
   changed_message = []
+  check_mode = module.check_mode
   msg = ""
 
   mk = mt_api.Mikrotik(hostname, username, password)
@@ -184,10 +185,11 @@ def main():
 
   if state == "present":
     if mikrotik_bridge_port == {}:
-      mk.api_add(
-          base_path=bridge_port_path,
-          params=bridge_port_params
-      )
+      if not check_mode:
+        mk.api_add(
+            base_path=bridge_port_path,
+            params=bridge_port_params
+        )
       changed_message.append(ansible_bridge_port_interface + " added to bridge")
       changed = True,
     else:
@@ -201,7 +203,8 @@ def main():
           bridge_port_diff_keys[key] = bridge_port_params[key]
       if bridge_port_diff_keys != {}:
         bridge_port_diff_keys['numbers'] = client_id
-        mk.api_edit(base_path=bridge_port_path, params=bridge_port_diff_keys)
+        if not check_mode:
+          mk.api_edit(base_path=bridge_port_path, params=bridge_port_diff_keys)
         changed = True
         changed_message.append("Changed bridge port: " + bridge_port_params['bridge'])
       else:
@@ -213,7 +216,8 @@ def main():
 
   elif state == "absent":
     if client_id:
-      mk.api_remove(base_path=bridge_port_path, remove_id=client_id)
+      if not check_mode:
+        mk.api_remove(base_path=bridge_port_path, remove_id=client_id)
       changed_message.append(bridge_port_params['interface'] + " removed")
       changed = True
     #####################################################

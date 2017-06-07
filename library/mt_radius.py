@@ -94,30 +94,31 @@ from ansible.module_utils.basic import AnsibleModule
 
 
 def main():
-
   module = AnsibleModule(
-      argument_spec=dict(
-          hostname= dict(required=True),
-          username= dict(required=True),
-          password= dict(required=True),
-          address = dict(required=False, type='str'),
-          comment = dict(required=True, type='str'),
-          secret  = dict(required=False, type='str'),
-          service = dict(required=False, type='list'),
-          timeout = dict(required=False, type='str'),
-          incoming= dict(required=False, type='dict'),
-          state   = dict(
-              required  = True,
-              choices   = ['present', 'absent'],
-              type      = 'str'
-          ),
-      )
+    argument_spec=dict(
+      hostname= dict(required=True),
+      username= dict(required=True),
+      password= dict(required=True),
+      address = dict(required=False, type='str'),
+      comment = dict(required=True, type='str'),
+      secret  = dict(required=False, type='str'),
+      service = dict(required=False, type='list'),
+      timeout = dict(required=False, type='str'),
+      incoming= dict(required=False, type='dict'),
+      state   = dict(
+        required  = True,
+        choices   = ['present', 'absent'],
+        type      = 'str'
+      ),
+    ),
+    supports_check_mode=True
   )
 
   hostname     = module.params['hostname']
   username     = module.params['username']
   password     = module.params['password']
   state        = module.params['state']
+  check_mode   = module.check_mode
   changed      = False
   msg = ""
 
@@ -147,10 +148,12 @@ def main():
         pass
       else:
         # edit port
-        mk.api_edit(base_path=incoming_path, params=incoming)
+        if not check_mode:
+          mk.api_edit(base_path=incoming_path, params=incoming)
     else:
       # edit the accept and the port
-      mk.api_edit(base_path=incoming_path, params=incoming)
+      if not check_mode:
+        mk.api_edit(base_path=incoming_path, params=incoming)
   #######################################
   # Since we are grabbing all the parameters passed by the module
   # We need to remove the one that won't be used
@@ -204,7 +207,8 @@ def main():
   #######################################################
   if state == "present":
     if mikrotik_radius == {}:
-      mk.api_add(base_path=radius_path, params=radius_params)
+      if not check_mode:
+        mk.api_add(base_path=radius_path, params=radius_params)
       module.exit_json(
           failed=False,
           changed=True,
@@ -221,7 +225,8 @@ def main():
           radius_diff_keys[key] = radius_params[key]
       if radius_diff_keys != {}:
         radius_diff_keys['numbers'] = radius_id
-        mk.api_edit(base_path=radius_path, params=radius_diff_keys)
+        if not check_mode:
+          mk.api_edit(base_path=radius_path, params=radius_diff_keys)
         module.exit_json(
             failed=False,
             changed=True,
@@ -236,7 +241,8 @@ def main():
         )
   elif state == "absent":
     if radius_id:
-      mk.api_remove(base_path=radius_path, remove_id=radius_id)
+      if not check_mode:
+        mk.api_remove(base_path=radius_path, remove_id=radius_id)
       module.exit_json(
           failed=False,
           changed=True,

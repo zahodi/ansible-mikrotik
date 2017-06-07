@@ -1,14 +1,15 @@
 # -*- coding: utf-8 -*-
 DOCUMENTATION = '''
-module: mt_snmp
+module: mt_ip
 author:
   - "Valentin Gurmeza"
-version_added: "2.4"
-short_description: Manage mikrotik neighbor endpoints
+  - "Shaun Smiley"
+version_added: "2.3"
+short_description: Manage mikrotik ip endpoints
 requirements:
   - mt_api
 description:
-  - Generic mikrotik neighbor module.
+  - enable, disable, or modify a ip endpoint settings
 options:
   hostname:
     description:
@@ -24,7 +25,7 @@ options:
     required: True
   parameter:
     description:
-      - sub endpoint for mikrotik neighbor
+      - sub endpoint for mikrotik snmp
     required: True
     options:
       - netwatch
@@ -39,19 +40,17 @@ options:
 '''
 
 EXAMPLES = '''
-- mt_hotspot:
-    hostname:  "{{ inventory_hostname }}"
-    username:  "{{ mt_user }}"
-    password:  "{{ mt_pass }}"
-    parameter: discovery
-    settings:
-      name:     ether7
-      discover: "yes"
+- mt_service:
+    hostname:      "{{ inventory_hostname }}"
+    username:      "{{ mt_user }}"
+    password:      "{{ mt_pass }}"
+    disabled:      no
+    name:          ftp
+    address:       192.168.52.3
 '''
 
-from mt_common import clean_params, MikrotikIdempotent
 from ansible.module_utils.basic import AnsibleModule
-
+from mt_common import clean_params, MikrotikIdempotent
 
 
 def main():
@@ -63,7 +62,7 @@ def main():
       settings  = dict(required=False, type='dict'),
       parameter = dict(
         required  = True,
-        choices   = ['discovery'],
+        choices   = ['service', 'pool'],
         type      = 'str'
       ),
       state   = dict(
@@ -75,10 +74,8 @@ def main():
     supports_check_mode=True
   )
 
-  idempotent_parameter = None
   params = module.params
   idempotent_parameter = 'name'
-
 
   mt_obj = MikrotikIdempotent(
     hostname         = params['hostname'],
@@ -87,7 +84,7 @@ def main():
     state            = params['state'],
     desired_params   = params['settings'],
     idempotent_param = idempotent_parameter,
-    api_path         = '/ip/neighbor/' + str(params['parameter']),
+    api_path         = '/ip/' + str(params['parameter']),
     check_mode       = module.check_mode
   )
 
@@ -111,9 +108,7 @@ def main():
     module.exit_json(
       failed=False,
       changed=False,
-      #msg='',
       msg=params['settings'],
     )
-
 if __name__ == '__main__':
   main()

@@ -57,67 +57,69 @@ from ansible.module_utils.basic import AnsibleModule
 
 
 def main():
-    module = AnsibleModule(
-        argument_spec = dict(
-            hostname  = dict(required=True),
-            username  = dict(required=True),
-            password  = dict(required=True),
-            settings  = dict(required=False, type='dict'),
-            parameter = dict(
-                required  = True,
-                choices   = ['ntp_client', 'clock', 'identity', 'logging', 'routerboard_settings'],
-                type      = 'str'
-            ),
-            state   = dict(
-                required  = False,
-                choices   = ['present', 'absent'],
-                type      = 'str'
-            ),
-        )
+  module = AnsibleModule(
+    argument_spec = dict(
+      hostname  = dict(required=True),
+      username  = dict(required=True),
+      password  = dict(required=True),
+      settings  = dict(required=False, type='dict'),
+      parameter = dict(
+        required  = True,
+        choices   = ['ntp_client', 'clock', 'identity', 'logging', 'routerboard_settings'],
+        type      = 'str'
+      ),
+      state   = dict(
+        required  = False,
+        choices   = ['present', 'absent'],
+        type      = 'str'
+      ),
+    ),
+    supports_check_mode=True
+  )
+
+  params = module.params
+
+  if params['parameter'] == 'routerboard_settings':
+    params['parameter'] = 'routerboard/settings'
+
+  if params['parameter'] == 'ntp_client':
+    params['parameter'] = 'ntp/client'
+
+  clean_params(params['settings'])
+  mt_obj = MikrotikIdempotent(
+    hostname        = params['hostname'],
+    username        = params['username'],
+    password        = params['password'],
+    state           = params['state'],
+    desired_params  = params['settings'],
+    idempotent_param= None,
+    api_path        = '/system/' + params['parameter'],
+    check_mode      = module.check_mode
+  )
+
+  mt_obj.sync_state()
+
+  if mt_obj.failed:
+    module.fail_json(
+      msg = mt_obj.failed_msg
     )
-
-    params = module.params
-
-    if params['parameter'] == 'routerboard_settings':
-      params['parameter'] = 'routerboard/settings'
-
-    if params['parameter'] == 'ntp_client':
-      params['parameter'] = 'ntp/client'
-
-    clean_params(params['settings'])
-    mt_obj = MikrotikIdempotent(
-        hostname        = params['hostname'],
-        username        = params['username'],
-        password        = params['password'],
-        state           = params['state'],
-        desired_params  = params['settings'],
-        idempotent_param= None,
-        api_path        = '/system/' + params['parameter'],
+  elif mt_obj.changed:
+    module.exit_json(
+      failed=False,
+      changed=True,
+      msg=mt_obj.changed_msg,
+      diff={ "prepared": {
+        "old": mt_obj.old_params,
+        "new": mt_obj.new_params,
+      }},
     )
-
-    mt_obj.sync_state()
-
-    if mt_obj.failed:
-        module.fail_json(
-          msg = mt_obj.failed_msg
-        )
-    elif mt_obj.changed:
-        module.exit_json(
-            failed=False,
-            changed=True,
-            msg=mt_obj.changed_msg,
-            diff={ "prepared": {
-                "old": mt_obj.old_params,
-                "new": mt_obj.new_params,
-            }},
-        )
-    else:
-        module.exit_json(
-            failed=False,
-            changed=False,
-            #msg='',
-            msg=params['settings'],
-        )
+  else:
+    module.exit_json(
+      failed=False,
+      changed=False,
+      #msg='',
+      msg=params['settings'],
+    )
 
 if __name__ == '__main__':
   main()

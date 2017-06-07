@@ -140,7 +140,11 @@
                 name:     ether1
                 comment:  Ansible controlled ether1
           register: ether1_comment
-          failed_when: ( ether1_comment | changed )
+          failed_when: (
+              not ansible_check_mode
+            ) and (
+              ( ether1_comment | changed )
+            )
 
         - name: USUALLY_CHANGES Modify mtu of ether2
           mt_interfaces:
@@ -181,66 +185,94 @@
     ###################
     - block:
       - name: Test adding ip pool
-        mt_ip_pool:
+        mt_ip:
           hostname: "{{ mt_hostname }}"
           username: "{{ mt_user }}"
           password: "{{ mt_pass }}"
           state:       present
-          name: ansible_test
-          ranges: 102.3.4.5
+          parameter: pool
+          settings:
+            name: ansible_test
+            ranges: 102.3.4.5
 
       - name: NEVER_CHANGES Test adding duplicate ip pool
-        mt_ip_pool:
+        mt_ip:
           hostname: "{{ mt_hostname }}"
           username: "{{ mt_user }}"
           password: "{{ mt_pass }}"
           state:       present
-          name: ansible_test
-          ranges: 102.3.4.5
+          parameter: pool
+          settings:
+            name: ansible_test
+            ranges: 102.3.4.5
         register: ip_pool_test_1_add
-        failed_when: ( ip_pool_test_1_add | changed )
+        failed_when: (
+            not ansible_check_mode
+          ) and (
+            ( ip_pool_test_1_add | changed )
+          )
 
       - name: ALWAYS_CHANGES Test adding second ip pool to be removed later
-        mt_ip_pool:
+        mt_ip:
           hostname: "{{ mt_hostname }}"
           username: "{{ mt_user }}"
           password: "{{ mt_pass }}"
           state:       present
-          name: ansible_test2
-          ranges: 102.3.4.22
+          parameter: pool
+          settings:
+            name: ansible_test2
+            ranges: 102.3.4.22
         register: ip_pool_test_2_add
-        failed_when: not ( ip_pool_test_2_add | changed )
+        failed_when: (
+            not ansible_check_mode
+          ) and (
+            not ( ip_pool_test_2_add | changed )
+          )
 
       - name: Test adding ip pool to be used as next_pool
-        mt_ip_pool:
+        mt_ip:
           hostname: "{{ mt_hostname }}"
           username: "{{ mt_user }}"
           password: "{{ mt_pass }}"
           state:       present
-          name: next_pool1
-          ranges: 10.1.2.30-10.2.3.40
+          parameter: pool
+          settings:
+            name: next_pool1
+            ranges: 10.1.2.30-10.2.3.40
 
       - name: ALWAYS_CHANGES Test editing an existing ip-pool item (change ranges add next_pool)
-        mt_ip_pool:
+        mt_ip:
           hostname: "{{ mt_hostname }}"
           username: "{{ mt_user }}"
           password: "{{ mt_pass }}"
           state:       present
-          name: ansible_test
-          ranges: 102.3.4.6
-          next_pool: next_pool1
+          parameter: pool
+          settings:
+            name: ansible_test
+            ranges: 102.3.4.6
+            next_pool: next_pool1
         register: ip_pool_test_1_edit
-        failed_when: not ( ip_pool_test_1_edit | changed )
+        failed_when: (
+            not ansible_check_mode
+          ) and (
+            not ( ip_pool_test_1_edit | changed )
+          )
 
       - name: ALWAYS_CHANGES Test remove ip pool
-        mt_ip_pool:
+        mt_ip:
           hostname: "{{ mt_hostname }}"
           username: "{{ mt_user }}"
           password: "{{ mt_pass }}"
           state:       absent
-          name: ansible_test2
+          parameter: pool
+          settings:
+            name: ansible_test2
         register: ip_pool_test_2_rem
-        failed_when: not ( ip_pool_test_2_rem | changed )
+        failed_when: (
+            not ansible_check_mode
+          ) and (
+            not ( ip_pool_test_2_rem | changed )
+          )
 
       tags: ip-pool
     ##################
@@ -248,13 +280,15 @@
     ###################
     - block:
       - name: Test adding ip pool to be used by dhcp_server
-        mt_ip_pool:
+        mt_ip:
           hostname: "{{ mt_hostname }}"
           username: "{{ mt_user }}"
           password: "{{ mt_pass }}"
           state:    present
-          name:     pool1
-          ranges:   102.3.4.5
+          parameter: pool
+          settings:
+            name:     pool1
+            ranges:   102.3.4.5
 
       - name: Test adding a dhcp_server
         mt_dhcp_server:
@@ -284,7 +318,11 @@
             use-radius:    "yes"
             authoritative: after-10sec-delay
         register: dhcp_server_test_1_edit
-        failed_when: not ( dhcp_server_test_1_edit | changed )
+        failed_when: (
+            not ansible_check_mode
+          ) and (
+            not ( dhcp_server_test_1_edit | changed )
+          )
 
       - name: NEVER_CHANGES Test adding a duplicate of the first dhcp server
         mt_dhcp_server:
@@ -299,7 +337,11 @@
             interface:    ether1
             use-radius:   "yes"
         register: dhcp_server_test_1_duplicate
-        failed_when: ( dhcp_server_test_1_duplicate|changed )
+        failed_when: (
+            not ansible_check_mode
+          ) and (
+            ( dhcp_server_test_1_duplicate|changed )
+          )
 
       - name: ALWAYS_CHANGES Test adding another dhcp server to later remove
         mt_dhcp_server:
@@ -312,7 +354,11 @@
             interface:  "ether5"
             name:       "ansible_test_2"
         register: dhcp_server_test_2
-        failed_when: not ( dhcp_server_test_2 | changed )
+        failed_when: (
+            not ansible_check_mode
+          ) and (
+            not ( dhcp_server_test_2 | changed )
+          )
 
       - name: ALWAYS_CHANGES Test removing a dhcp server
         mt_dhcp_server:
@@ -324,7 +370,11 @@
           settings:
             name:       "ansible_test_2"
         register: dhcp_server_test_2_rem
-        failed_when: not ( dhcp_server_test_2_rem | changed )
+        failed_when: (
+            not ansible_check_mode
+          ) and (
+            not ( dhcp_server_test_2_rem | changed )
+          )
 
       - name: add a dhcp-server network
         mt_dhcp_server:
@@ -362,7 +412,11 @@
             dns-server: 10.147.172.20
             gateway: 10.147.172.1
         register: dhcp_network_mod
-        failed_when: not ( dhcp_network_mod | changed )
+        failed_when: (
+            not ansible_check_mode
+          ) and (
+            not ( dhcp_network_mod | changed )
+          )
 
       - name: ALWAYS_CHANGES remove first dhcp-server network
         mt_dhcp_server:
@@ -374,7 +428,11 @@
           settings:
             address: '192.168.10.0/24'
         register: dhcp_network_rem
-        failed_when: not ( dhcp_network_rem | changed )
+        failed_when: (
+            not ansible_check_mode
+          ) and (
+            not ( dhcp_network_rem | changed )
+          )
 
       - name: Test adding an item to dhcp-server options
         mt_dhcp_server:
@@ -394,68 +452,97 @@
     ###################
     - block:
       - name: Test adding ovpn-client
-        mt_interface_ovpn_client:
-          hostname: "{{ mt_hostname }}"
-          username: "{{ mt_user }}"
-          password: "{{ mt_pass }}"
-          state:       present
-          comment: "ansible test 1"
-          user:    ansible_admin
-          connect_to:  192.168.50.170
-          name: ansible_test
-          vpn_password: 'blablabla'
+        mt_interfaces:
+          hostname:  "{{ mt_hostname }}"
+          username:  "{{ mt_user }}"
+          password:  "{{ mt_pass }}"
+          state:     present
+          parameter: ovpn-client
+          settings:
+            comment: "ansible test 1"
+            user:    ansible_admin
+            connect-to:  192.168.50.170
+            name: ansible_test
+            password: 'blablabla'
+        tags: vpn-client-test
 
       - name: NEVER_CHANGES Test adding duplicate ovpn-client
-        mt_interface_ovpn_client:
-          hostname: "{{ mt_hostname }}"
-          username: "{{ mt_user }}"
-          password: "{{ mt_pass }}"
-          state:       present
-          comment: "ansible test 1"
-          user:    ansible_admin
-          connect_to:  192.168.50.170
-          name: ansible_test
-          vpn_password: 'blablabla'
+        mt_interfaces:
+          hostname:  "{{ mt_hostname }}"
+          username:  "{{ mt_user }}"
+          password:  "{{ mt_pass }}"
+          state:     present
+          parameter: ovpn-client
+          settings:
+            comment: "ansible test 1"
+            user:    ansible_admin
+            connect-to:  192.168.50.170
+            name: ansible_test
+            password: 'blablabla'
         register: ovpn_client_test_1_add
-        failed_when: ( ovpn_client_test_1_add | changed )
+        failed_when: (
+            not ansible_check_mode
+          ) and (
+            ( ovpn_client_test_1_add | changed )
+          )
+        tags: vpn-client-test
 
       - name: ALWAYS_CHANGES Test editing an existing ovpn-client item (change address)
-        mt_interface_ovpn_client:
-          hostname: "{{ mt_hostname }}"
-          username: "{{ mt_user }}"
-          password: "{{ mt_pass }}"
-          state:       present
-          comment: "ansible test 1"
-          user:    ansible_admin
-          connect_to:  192.168.50.171
-          auth: "null"
-          name: ansible_test
-          vpn_password: 'bar'
+        mt_interfaces:
+          hostname:  "{{ mt_hostname }}"
+          username:  "{{ mt_user }}"
+          password:  "{{ mt_pass }}"
+          state:     present
+          parameter: ovpn-client
+          settings:
+            comment: "ansible test 1"
+            user:    ansible_admin
+            connect-to:  192.168.50.171
+            auth: "null"
+            name: ansible_test
+            password: 'bar'
         register: ovpn_client_test_1_edit
-        failed_when: not ( ovpn_client_test_1_edit | changed )
+        failed_when: (
+            not ansible_check_mode
+          ) and (
+            not ( ovpn_client_test_1_edit | changed )
+          )
+        tags: vpn-client-test
 
       - name: ALWAYS_CHANGES Test adding a second ovpn-client to later remove
-        mt_interface_ovpn_client:
-          hostname: "{{ mt_hostname }}"
-          username: "{{ mt_user }}"
-          password: "{{ mt_pass }}"
-          comment: "ansible test 2"
-          state:       present
-          user:    ansible_admin
-          connect_to:  192.168.52.111
-          name: ansible_test2
+        mt_interfaces:
+          hostname:  "{{ mt_hostname }}"
+          username:  "{{ mt_user }}"
+          password:  "{{ mt_pass }}"
+          state:     present
+          parameter: ovpn-client
+          settings:
+            user:    ansible_admin
+            comment: "ansible test 2"
+            connect_to:  192.168.52.111
+            name: ansible_test2
         register: ovpn_client_test_2_add
-        failed_when: not ( ovpn_client_test_2_add | changed )
+        failed_when: (
+            not ansible_check_mode
+          ) and (
+            not ( ovpn_client_test_2_add | changed )
+          )
 
       - name: ALWAYS_CHANGES Test remove ovpn-client
-        mt_interface_ovpn_client:
-          hostname: "{{ mt_hostname }}"
-          username: "{{ mt_user }}"
-          password: "{{ mt_pass }}"
-          state:       absent
-          name: ansible_test2
+        mt_interfaces:
+          hostname:  "{{ mt_hostname }}"
+          username:  "{{ mt_user }}"
+          password:  "{{ mt_pass }}"
+          state:     absent
+          parameter: ovpn-client
+          settings:
+            name: ansible_test2
         register: ovpn_client_test_2_rem
-        failed_when: not ( ovpn_client_test_2_rem | changed )
+        failed_when: (
+            not ansible_check_mode
+          ) and (
+            not ( ovpn_client_test_2_rem | changed )
+          )
       tags: ovpn-client
 
     ###################
@@ -492,7 +579,11 @@
             - wireless
           timeout:        '2s500ms'
         register: radius_test_1_edit
-        failed_when: not ( radius_test_1_edit | changed )
+        failed_when: (
+            not ansible_check_mode
+          ) and (
+            not ( radius_test_1_edit | changed )
+          )
         #changed_when: False
 
       - name: ALWAYS_CHANGES Test editing an existing radius item (change address back)
@@ -510,7 +601,11 @@
             - wireless
           timeout:        '2s500ms'
         register: radius_test_1_edit
-        failed_when: not ( radius_test_1_edit | changed )
+        failed_when: (
+            not ansible_check_mode
+          ) and (
+            not ( radius_test_1_edit | changed )
+          )
         #changed_when: False
 
       - name: Test adding a duplicate of the first radius item
@@ -528,7 +623,11 @@
             - wireless
           timeout:        '2s500ms'
         register: radius_test_1_duplicate
-        failed_when: ( radius_test_1_duplicate|changed )
+        failed_when: (
+            not ansible_check_mode
+          ) and (
+            ( radius_test_1_duplicate|changed )
+          )
 
       - name: ALWAYS_CHANGES Test adding another radius item to later remove
         mt_radius:
@@ -545,7 +644,11 @@
             - wireless
           timeout:        '2s500ms'
         register: radius_test_2
-        failed_when: not ( radius_test_2 | changed )
+        failed_when: (
+            not ansible_check_mode
+          ) and (
+            not ( radius_test_2 | changed )
+          )
 
       - name: ALWAYS_CHANGES Test removing a radius item
         mt_radius:
@@ -558,7 +661,11 @@
             accept: "true"
             port: "37988"
         register: radius_test_2_rem
-        failed_when: not ( radius_test_2_rem | changed )
+        failed_when: (
+            not ansible_check_mode
+          ) and (
+            not ( radius_test_2_rem | changed )
+          )
 
       tags: radius
 
@@ -582,7 +689,11 @@
             - address: 192.168.1.6
               comment: test_comment3
         register: address_list_add_1
-        failed_when: not ( address_list_add_1 | changed )
+        failed_when: (
+            not ansible_check_mode
+          ) and (
+            not ( address_list_add_1 | changed )
+          )
 
       - name: ALWAYS_CHANGES Test editing a firewall address-list
         mt_ip_firewall_addresslist:
@@ -598,8 +709,12 @@
               comment: dns2
             - address: 192.168.1.19
               comment: test_comment3
-        register: editress_list_edit_1
-        failed_when: not ( editress_list_edit_1 | changed )
+        register: address_list_edit_1
+        failed_when: (
+            not ansible_check_mode
+          ) and (
+            not ( address_list_edit_1 | changed )
+          )
 
       - name: Test adding a duplicate address-list
         mt_ip_firewall_addresslist:
@@ -615,8 +730,12 @@
               comment: dns2
             - address: 192.168.1.19
               comment: test_comment3
-        register: add_dupress_list_add_dup_1
-        failed_when: ( add_dupress_list_add_dup_1 | changed )
+        register: add_address_list_add_dup_1
+        failed_when: (
+            not ansible_check_mode
+          ) and (
+            ( add_address_list_add_dup_1 | changed )
+          )
 
       - name: ALWAYS_CHANGES Test removing a firewall address-list
         mt_ip_firewall_addresslist:
@@ -625,11 +744,14 @@
           password:   "{{ mt_pass }}"
           state:      "absent"
           list_name: test_list
-        register: remress_list_rem_1
-        failed_when: not ( remress_list_rem_1 | changed )
+        register: address_list_rem_1
+        failed_when: (
+            not ansible_check_mode
+          ) and (
+            not ( address_list_rem_1 | changed )
+          )
 
-      tags: address_list
-
+      tags: address-list
 
 
     ###################
@@ -1064,7 +1186,11 @@
               comment: 'Ansible - fw filter rule20'
               place-before: '19'
           register: nat_idem
-          failed_when: ( nat_idem | changed )
+          failed_when: (
+              not ansible_check_mode
+            ) and (
+              ( nat_idem | changed )
+            )
 
         - name: ALWAYS_CHANGES, change rule
           mt_ip_firewall:
@@ -1081,7 +1207,11 @@
               place-before: '3'
               src-address: 192.165.0.0/16
           register: nat_change
-          failed_when: not ( nat_change | changed )
+          failed_when: (
+              not ansible_check_mode
+            ) and (
+              not ( nat_change | changed )
+            )
 
         - name: ALWAYS_CHANGES, remove rule
           mt_ip_firewall:
@@ -1094,7 +1224,11 @@
           with_items:
             - place-before: '4'
           register: nat_rem
-          failed_when: not ( nat_rem | changed )
+          failed_when: (
+              not ansible_check_mode
+            ) and (
+              not ( nat_rem | changed )
+            )
 
         tags: firewall-nat
 
@@ -1113,35 +1247,45 @@
     ###################
     - block:
       - name: Test enabling ftp service
-        mt_service:
+        mt_ip:
           hostname: "{{ mt_hostname }}"
           username: "{{ mt_user }}"
           password: "{{ mt_pass }}"
-          disabled: no
-          name:     ftp
-          address:  192.168.50.1/32
+          parameter: service
+          settings:
+            disabled: "no"
+            name:     ftp
+            address:  192.168.50.1/32
 
       - name: Test disabling services
-        mt_service:
+        mt_ip:
           hostname: "{{ mt_hostname }}"
           username: "{{ mt_user }}"
           password: "{{ mt_pass }}"
-          disabled: yes
-          name: "{{ item }}"
+          parameter: service
+          settings:
+            disabled: "yes"
+            name: "{{ item }}"
         with_items:
           - ftp
           - telnet
           - api-ssl
 
       - name: ALWAYS_CHANGES Test re-enabling telnet service
-        mt_service:
+        mt_ip:
           hostname: "{{ mt_hostname }}"
           username: "{{ mt_user }}"
           password: "{{ mt_pass }}"
-          disabled: no
-          name:     telnet
+          parameter: service
+          settings:
+            disabled: "no"
+            name:     telnet
         register: enable_telnet
-        failed_when: not ( enable_telnet | changed )
+        failed_when: (
+            not ansible_check_mode
+          ) and (
+            not ( enable_telnet | changed )
+          )
       tags: service
 
     ###################
@@ -1170,7 +1314,11 @@
         with_items:
           - "bridge1"
         register: mod_bridge1
-        failed_when: ( mod_bridge1 | changed )
+        failed_when: (
+            not ansible_check_mode
+          ) and (
+            ( mod_bridge1 | changed )
+          )
 
       # bridge ports depend on bridge being created first
 
@@ -1198,7 +1346,11 @@
           - [ "bridge1" ]
           - [ "ether8" ]
         register: mod_bridge1_port
-        failed_when: ( mod_bridge1_port | changed )
+        failed_when: (
+            not ansible_check_mode
+          ) and (
+            ( mod_bridge1_port | changed )
+          )
 
       - name: Add additional param to bridge port
         mt_interface_bridge_port:
@@ -1226,7 +1378,11 @@
           - [ "bridge1" ]
           - [ "ether7" ]
         register: bridge1_add_2nd_inter
-        failed_when: not ( bridge1_add_2nd_inter | changed )
+        failed_when: (
+            not ansible_check_mode
+          ) and (
+            not ( bridge1_add_2nd_inter | changed )
+          )
 
       - name: ALWAYS_CHANGES Remove 2nd interface to bridge1 port
         mt_interface_bridge_port:
@@ -1240,7 +1396,11 @@
           - [ "bridge1" ]
           - [ "ether7" ]
         register: bridge1_rem_2nd_inter
-        failed_when: not ( bridge1_rem_2nd_inter | changed )
+        failed_when: (
+            not ansible_check_mode
+          ) and (
+            not ( bridge1_rem_2nd_inter | changed )
+          )
 
       - name: Add bridge2
         mt_interface_bridge:
@@ -1277,7 +1437,11 @@
             use-ip-firewall-for-vlan: no
             use-ip-firewall-for-pppoe: no
         register: bridge_settings_1
-        failed_when: not ( bridge_settings_1 | changed )
+        failed_when: (
+            not ansible_check_mode
+          ) and (
+            not ( bridge_settings_1 | changed )
+          )
 
       - name: Adjust settings again (idempotency test)
         mt_interface_bridge:
@@ -1290,7 +1454,11 @@
             use-ip-firewall-for-vlan: no
             use-ip-firewall-for-pppoe: no
         register: bridge_settings_2
-        failed_when: ( bridge_settings_2 | changed )
+        failed_when: (
+            not ansible_check_mode
+          ) and (
+            ( bridge_settings_2 | changed )
+          )
 
       tags: bridge
 
@@ -1323,7 +1491,11 @@
             - sniff
             - write
         register: scheduler_mod
-        failed_when: not ( scheduler_mod | changed )
+        failed_when: (
+            not ansible_check_mode
+          ) and (
+            not ( scheduler_mod | changed )
+          )
 
       - name: NEVER_CHANGES add duplicate scheduler
         mt_system_scheduler:
@@ -1339,7 +1511,11 @@
             - sniff
             - write
         register: scheduler_dup
-        failed_when: ( scheduler_dup | changed )
+        failed_when: (
+            not ansible_check_mode
+          ) and (
+            ( scheduler_dup | changed )
+          )
 
       - name: ALWAYS_CHANGES remove duplicate scheduler
         mt_system_scheduler:
@@ -1349,7 +1525,11 @@
           state:    absent
           name:     ansible_test
         register: scheduler_rem
-        failed_when: not ( scheduler_rem | changed )
+        failed_when: (
+            not ansible_check_mode
+          ) and (
+            not ( scheduler_rem | changed )
+          )
 
       tags: scheduler
 
@@ -1432,7 +1612,11 @@
           settings:
             time-zone-name: GMT
         register: mt_clock
-        failed_when: not ( mt_clock | changed )
+        failed_when: (
+            not ansible_check_mode
+          ) and (
+            not ( mt_clock | changed )
+          )
 
       - name: set ntp client
         mt_system:
@@ -1456,7 +1640,11 @@
             primary-ntp: 199.182.221.11
             secondary-ntp: 67.215.197.149
         register: mt_ntp_client
-        failed_when: ( mt_ntp_client | changed )
+        failed_when: (
+            not ansible_check_mode
+          ) and (
+            ( mt_ntp_client | changed )
+          )
 
       - name: ALWAYS_CHANGES modify ntp client
         mt_system:
@@ -1469,7 +1657,11 @@
             primary-ntp: 199.182.221.11
             secondary-ntp: 67.215.197.149
         register: mt_ntp_client_change
-        failed_when: not ( mt_ntp_client_change | changed )
+        failed_when: (
+            not ansible_check_mode
+          ) and (
+            not ( mt_ntp_client_change | changed )
+          )
 
       ##############################################
       # WIP
@@ -1515,7 +1707,11 @@
             address: 192.168.1.3
             from: email@localhost.com
         register: email_edit
-        failed_when: not ( email_edit | changed )
+        failed_when: (
+            not ansible_check_mode
+          ) and (
+            not ( email_edit | changed )
+          )
 
       - name: add netwatch item
         mt_tool:
@@ -1539,7 +1735,11 @@
             host: '192.168.10.1'
             up-script: test
         register: netwatch_idem
-        failed_when: ( netwatch_idem | changed )
+        failed_when: (
+            not ansible_check_mode
+          ) and (
+            ( netwatch_idem | changed )
+          )
 
       - name: ALWAYS_CHANGES edit netwatch item, change up-script
         mt_tool:
@@ -1552,7 +1752,11 @@
             host: '192.168.10.1'
             up-script: test2
         register: netwatch_edit
-        failed_when: not ( netwatch_edit | changed )
+        failed_when: (
+            not ansible_check_mode
+          ) and (
+            not ( netwatch_edit | changed )
+          )
 
       - name: ALWAYS_CHANGES remove netwatch item
         mt_tool:
@@ -1564,7 +1768,11 @@
           settings:
             host: '192.168.10.1'
         register: netwatch_rem
-        failed_when: not ( netwatch_rem | changed )
+        failed_when: (
+            not ansible_check_mode
+          ) and (
+            not ( netwatch_rem | changed )
+          )
 
       tags: tool
 
@@ -1604,7 +1812,11 @@
           settings:
             name: to_remove
         register: snmp_community_rem
-        failed_when: not ( snmp_community_rem | changed )
+        failed_when: (
+            not ansible_check_mode
+          ) and (
+            not ( snmp_community_rem | changed )
+          )
 
       - name: ALWAYS_CHANGES modify existing snmp community
         mt_snmp:
@@ -1617,7 +1829,11 @@
             addresses: "10.0.0.0/8"
             name: icghol
         register: snmp_community
-        failed_when: not ( snmp_community | changed )
+        failed_when: (
+            not ansible_check_mode
+          ) and (
+            not ( snmp_community | changed )
+          )
 
       - name: NEVER_CHANGES check idempotency on snmp community
         mt_snmp:
@@ -1630,7 +1846,11 @@
             addresses: "10.0.0.0/8"
             name: icghol
         register: snmp_community_idem
-        failed_when: ( snmp_community_idem | changed )
+        failed_when: (
+            not ansible_check_mode
+          ) and (
+            ( snmp_community_idem | changed )
+          )
 
       - name: edit snmp settings
         mt_snmp:
@@ -1654,7 +1874,11 @@
             trap-community: icghol
             trap-version: 2
         register: snmp_idem
-        failed_when: ( snmp_community_idem | changed )
+        failed_when: (
+            not ansible_check_mode
+          ) and (
+            ( snmp_idem | changed )
+          )
 
       - name: ALWAYS_CHANGES check editing snmp
         mt_snmp:
@@ -1667,7 +1891,11 @@
             trap-community: icghol
             trap-version: 3
         register: snmp_edit
-        failed_when: not ( snmp_edit | changed )
+        failed_when: (
+            not ansible_check_mode
+          ) and (
+            not ( snmp_edit | changed )
+          )
 
       tags: snmp
 
@@ -1898,7 +2126,11 @@
             name: ether2
             discover: "no"
         register: discovery_edit
-        failed_when: ( discovery_edit | changed )
+        failed_when: (
+            not ansible_check_mode
+          ) and (
+           ( discovery_edit | changed )
+          )
 
       - name: ALWAYS_CHANGES edit a interface discovery option
         mt_neighbor:
@@ -1910,7 +2142,11 @@
             name: ether2
             discover: "yes"
         register: discovery_edit
-        failed_when: not ( discovery_edit | changed )
+        failed_when: (
+            not ansible_check_mode
+          ) and (
+           not ( discovery_edit | changed )
+          )
 
       tags: neighbor
 
@@ -1975,7 +2211,11 @@
             name: user_test1
             group: read
         register: user_add
-        failed_when: ( user_add | changed )
+        failed_when: (
+            not ansible_check_mode
+          ) and (
+           ( user_add | changed )
+          )
 
       - name: ALWAYS_CHANGES modify user
         mt_user:
@@ -1988,7 +2228,11 @@
             name: user_test1
             group: group_test1
         register: user_edit
-        failed_when: not ( user_edit | changed )
+        failed_when: (
+            not ansible_check_mode
+          ) and (
+            not ( user_edit | changed )
+          )
 
       - name: ALWAYS_CHANGES remove user
         mt_user:
@@ -2000,7 +2244,11 @@
           settings:
             name: user_test1
         register: user_rem
-        failed_when: not ( user_rem | changed )
+        failed_when: (
+            not ansible_check_mode
+          ) and (
+            not ( user_rem | changed )
+          )
 
       tags: user
 
@@ -2042,7 +2290,11 @@
             name: test1
             supplicant-identity: test
         register: security_prof_idem
-        failed_when: ( security_prof_idem | changed )
+        failed_when: (
+            not ansible_check_mode
+          ) and (
+            ( security_prof_idem | changed )
+          )
 
       - name: ALWAYS_CHANGES add security-profiles item, check idempotency
         mt_interface_wireless:
@@ -2056,7 +2308,11 @@
             supplicant-identity: test
             management-protection: allowed
         register: security_prof_edit
-        failed_when: not ( security_prof_edit | changed )
+        failed_when: (
+            not ansible_check_mode
+          ) and (
+            not ( security_prof_edit | changed )
+          )
 
       - name: ALWAYS_CHANGES rem security-profiles item
         mt_interface_wireless:
@@ -2068,6 +2324,10 @@
           settings:
             name: test1
         register: security_prof_rem
-        failed_when: not ( security_prof_rem | changed )
+        failed_when: (
+            not ansible_check_mode
+          ) and (
+            not ( security_prof_rem | changed )
+          )
 
       tags: interface-wireless
