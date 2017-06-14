@@ -2,6 +2,39 @@
 import mt_api
 import re
 
+      if 'policy' in ansible_scheduler_params:
+        dif_list = []
+        if 'policy' in mikrotik_scheduler_task:
+          policy = mikrotik_scheduler_task['policy'].split(',')
+          dif_list = set(ansible_scheduler_params['policy']) & set(policy)
+
+        if dif_list == []:
+          list_to_string = ""
+          list_to_string = ','.join(map(str, ansible_scheduler_params['policy']))
+          scheduler_diff_keys['policy'] = list_to_string
+
+      for key in ansible_scheduler_params:
+        if key != 'policy':
+          if key in mikrotik_scheduler_task:
+            if ansible_scheduler_params[key] != mikrotik_scheduler_task[key]:
+              scheduler_diff_keys[key] = ansible_scheduler_params[key]
+          else:
+            scheduler_diff_keys[key] = ansible_scheduler_params[key]
+      if scheduler_diff_keys != {}:
+        scheduler_diff_keys['numbers'] = client_id
+        if not check_mode:
+          mk.api_edit(base_path=api_path, params=scheduler_diff_keys)
+        changed = True
+        changed_message.append(
+          "Changed scheduler task : " + ansible_scheduler_params['name']
+        )
+
+
+def list_string(ansible_list, mikrotik_string):
+  list_to_string = ""
+  list_to_string = ','.join(map(str, ansible_scheduler_params['policy']))
+  scheduler_diff_keys['policy'] = list_to_string
+
 
 def clean_params(params):
   '''
