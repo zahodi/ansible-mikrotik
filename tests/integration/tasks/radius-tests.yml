@@ -15,7 +15,7 @@
         - wireless
       timeout:        '2s500ms'
 
-- name: ALWAYS_CHANGES Test editing an existing radius item (change address)
+- name: ALWAYS_CHANGES Test editing an existing radius item (edit service item)
   mt_radius:
     hostname:   "{{ mt_hostname }}"
     username:   "{{ mt_user }}"
@@ -23,7 +23,7 @@
     state:      "present"
     parameter:  radius
     settings:
-      address:     "192.168.12.19"
+      address:     "192.168.12.2"
       comment:    'Ansible - radius test 1'
       secret:     'password'
       service:
@@ -39,7 +39,7 @@
       not ( radius_test_1_edit | changed )
     )
 
-- name: ALWAYS_CHANGES Test editing an existing radius item (change address back)
+- name: ALWAYS_CHANGES Test editing an existing radius item (change service list)
   mt_radius:
     hostname:   "{{ mt_hostname }}"
     username:   "{{ mt_user }}"
@@ -124,6 +124,44 @@
       not ( radius_test_2_rem | changed )
     )
 
-#    incoming:
-#      accept: "true"
-#      port: "37988"
+- name: Change incoming settings
+  mt_radius:
+    hostname:   "{{ mt_hostname }}"
+    username:   "{{ mt_user }}"
+    password:   "{{ mt_pass }}"
+    parameter:  incoming
+    settings:
+      accept: "true"
+      port: "37988"
+
+- name: ALWAYS_CHANGES Change incoming settings
+  mt_radius:
+    hostname:   "{{ mt_hostname }}"
+    username:   "{{ mt_user }}"
+    password:   "{{ mt_pass }}"
+    parameter:  incoming
+    settings:
+      accept: "true"
+      port: "37955"
+  register: change_incoming
+  failed_when: (
+      not ansible_check_mode
+    ) and (
+      not ( change_incoming | changed )
+    )
+
+- name: NEVER_CHANGES check idempotency of incoming settings
+  mt_radius:
+    hostname:   "{{ mt_hostname }}"
+    username:   "{{ mt_user }}"
+    password:   "{{ mt_pass }}"
+    parameter:  incoming
+    settings:
+      accept: "true"
+      port: "37955"
+  register: idem_incoming
+  failed_when: (
+      not ansible_check_mode
+    ) and (
+      ( idem_incoming | changed )
+    )
