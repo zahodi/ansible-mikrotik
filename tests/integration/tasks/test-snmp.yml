@@ -1,0 +1,117 @@
+---
+- name: add snmp community
+  mt_snmp:
+    hostname: "{{ mt_hostname }}"
+    username: "{{ mt_user }}"
+    password: "{{ mt_pass }}"
+    state:     present
+    parameter: community
+    settings:
+      addresses: "0.0.0.0/0"
+      name: icghol
+
+- name: add second snmp community to remove later
+  mt_snmp:
+    hostname: "{{ mt_hostname }}"
+    username: "{{ mt_user }}"
+    password: "{{ mt_pass }}"
+    state:     present
+    parameter: community
+    settings:
+      addresses: "192.168.1.0/24"
+      name: to_remove
+
+- name: ALWAYS_CHANGES remove second snmp community
+  mt_snmp:
+    hostname: "{{ mt_hostname }}"
+    username: "{{ mt_user }}"
+    password: "{{ mt_pass }}"
+    state:     absent
+    parameter: community
+    settings:
+      name: to_remove
+  register: snmp_community_rem
+  failed_when: (
+      not ansible_check_mode
+    ) and (
+      not ( snmp_community_rem | changed )
+    )
+
+- name: ALWAYS_CHANGES modify existing snmp community
+  mt_snmp:
+    hostname: "{{ mt_hostname }}"
+    username: "{{ mt_user }}"
+    password: "{{ mt_pass }}"
+    state:     present
+    parameter: community
+    settings:
+      addresses: "10.0.0.0/8"
+      name: icghol
+  register: snmp_community
+  failed_when: (
+      not ansible_check_mode
+    ) and (
+      not ( snmp_community | changed )
+    )
+
+- name: NEVER_CHANGES check idempotency on snmp community
+  mt_snmp:
+    hostname: "{{ mt_hostname }}"
+    username: "{{ mt_user }}"
+    password: "{{ mt_pass }}"
+    state:     present
+    parameter: community
+    settings:
+      addresses: "10.0.0.0/8"
+      name: icghol
+  register: snmp_community_idem
+  failed_when: (
+      not ansible_check_mode
+    ) and (
+      ( snmp_community_idem | changed )
+    )
+
+- name: edit snmp settings
+  mt_snmp:
+    hostname: "{{ mt_hostname }}"
+    username: "{{ mt_user }}"
+    password: "{{ mt_pass }}"
+    parameter: snmp
+    settings:
+      enabled: "yes"
+      trap-community: icghol
+      trap-version: 2
+
+- name: NEVER_CHANGES edit snmp settings again check idempotency
+  mt_snmp:
+    hostname: "{{ mt_hostname }}"
+    username: "{{ mt_user }}"
+    password: "{{ mt_pass }}"
+    parameter: snmp
+    settings:
+      enabled: "yes"
+      trap-community: icghol
+      trap-version: 2
+  register: snmp_idem
+  failed_when: (
+      not ansible_check_mode
+    ) and (
+      ( snmp_idem | changed )
+    )
+
+- name: ALWAYS_CHANGES check editing snmp
+  mt_snmp:
+    hostname: "{{ mt_hostname }}"
+    username: "{{ mt_user }}"
+    password: "{{ mt_pass }}"
+    parameter: snmp
+    settings:
+      enabled: "yes"
+      trap-community: icghol
+      trap-version: 3
+  register: snmp_edit
+  failed_when: (
+      not ansible_check_mode
+    ) and (
+      not ( snmp_edit | changed )
+    )

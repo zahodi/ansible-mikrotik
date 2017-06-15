@@ -1,0 +1,85 @@
+---
+- name: Test adding vlan
+  mt_interfaces:
+    hostname:  "{{ mt_hostname }}"
+    username:  "{{ mt_user }}"
+    password:  "{{ mt_pass }}"
+    state:     present
+    parameter: vlan
+    settings:
+      name:     vlan_test1
+      vlan_id:  30
+      interface: ether3
+      comment:   Testing vlan1
+
+- name: NEVER_CHANGES Test adding duplicate vlan interface
+  mt_interfaces:
+    hostname: "{{ mt_hostname }}"
+    username: "{{ mt_user }}"
+    password: "{{ mt_pass }}"
+    state:       present
+    parameter: vlan
+    settings:
+      name:     vlan_test1
+      vlan_id:  30
+      interface: ether3
+  register: vlan_test_1_add
+  failed_when: (
+      not ansible_check_mode
+    ) and (
+      ( vlan_test_1_add | changed )
+    )
+
+- name: ALWAYS_CHANGES Test adding second vlan to be removed later
+  mt_interfaces:
+    hostname: "{{ mt_hostname }}"
+    username: "{{ mt_user }}"
+    password: "{{ mt_pass }}"
+    state:       present
+    parameter: vlan
+    settings:
+      name:     vlan_test2
+      vlan_id:  32
+      interface: ether4
+  register: vlan_test_2_add
+  failed_when: (
+      not ansible_check_mode
+    ) and (
+      not ( vlan_test_2_add | changed )
+    )
+
+- name: ALWAYS_CHANGES Test editing an existing vlan (change vlan_id)
+  mt_interfaces:
+    hostname: "{{ mt_hostname }}"
+    username: "{{ mt_user }}"
+    password: "{{ mt_pass }}"
+    state:       present
+    parameter: vlan
+    settings:
+      name:     vlan_test1
+      vlan_id:  36
+      interface: ether3
+      comment:    "testing ansible stuff"
+  register: vlan_test_1_edit
+  failed_when: (
+      not ansible_check_mode
+    ) and (
+      not ( vlan_test_1_edit | changed )
+    )
+
+- name: ALWAYS_CHANGES Test remove vlan
+  mt_interfaces:
+    hostname: "{{ mt_hostname }}"
+    username: "{{ mt_user }}"
+    password: "{{ mt_pass }}"
+    state:    absent
+    parameter: vlan
+    settings:
+      name:     vlan_test2
+  register: vlan_test_2_rem
+  failed_when: (
+      not ansible_check_mode
+      ) and (
+       not (
+       vlan_test_2_rem | changed )
+      )

@@ -1,0 +1,166 @@
+---
+- name: Test adding ip pool to be used by dhcp_server
+  mt_ip:
+    hostname: "{{ mt_hostname }}"
+    username: "{{ mt_user }}"
+    password: "{{ mt_pass }}"
+    state:    present
+    parameter: pool
+    settings:
+      name:     pool1
+      ranges:   102.3.4.5
+
+- name: Test adding a dhcp_server
+  mt_dhcp_server:
+    hostname:   "{{ mt_hostname }}"
+    username:   "{{ mt_user }}"
+    password:   "{{ mt_pass }}"
+    state:         "present"
+    parameter: dhcp-server
+    settings:
+      name:          ansible_test
+      address-pool:  'pool1'
+      interface:     ether1
+      use-radius:    "yes"
+      authoritative: after-2sec-delay
+
+- name: ALWAYS_CHANGES Test editing an existing dhcp server (change authoritative)
+  mt_dhcp_server:
+    hostname:   "{{ mt_hostname }}"
+    username:   "{{ mt_user }}"
+    password:   "{{ mt_pass }}"
+    state:      "present"
+    parameter:  dhcp-server
+    settings:
+      name:          ansible_test
+      address-pool:  'pool1'
+      interface:     ether1
+      use-radius:    "yes"
+      authoritative: after-10sec-delay
+  register: dhcp_server_test_1_edit
+  failed_when: (
+      not ansible_check_mode
+    ) and (
+      not ( dhcp_server_test_1_edit | changed )
+    )
+
+- name: NEVER_CHANGES Test adding a duplicate of the first dhcp server
+  mt_dhcp_server:
+    hostname:  "{{ mt_hostname }}"
+    username:  "{{ mt_user }}"
+    password:  "{{ mt_pass }}"
+    state:     "present"
+    parameter: dhcp-server
+    settings:
+      name:         ansible_test
+      address-pool: 'pool1'
+      interface:    ether1
+      use-radius:   "yes"
+  register: dhcp_server_test_1_duplicate
+  failed_when: (
+      not ansible_check_mode
+    ) and (
+      ( dhcp_server_test_1_duplicate|changed )
+    )
+
+- name: ALWAYS_CHANGES Test adding another dhcp server to later remove
+  mt_dhcp_server:
+    hostname:   "{{ mt_hostname }}"
+    username:   "{{ mt_user }}"
+    password:   "{{ mt_pass }}"
+    state:      "present"
+    parameter: dhcp-server
+    settings:
+      interface:  "ether5"
+      name:       "ansible_test_2"
+  register: dhcp_server_test_2
+  failed_when: (
+      not ansible_check_mode
+    ) and (
+      not ( dhcp_server_test_2 | changed )
+    )
+
+- name: ALWAYS_CHANGES Test removing a dhcp server
+  mt_dhcp_server:
+    hostname:  "{{ mt_hostname }}"
+    username:  "{{ mt_user }}"
+    password:  "{{ mt_pass }}"
+    state:     "absent"
+    parameter: dhcp-server
+    settings:
+      name:       "ansible_test_2"
+  register: dhcp_server_test_2_rem
+  failed_when: (
+      not ansible_check_mode
+    ) and (
+      not ( dhcp_server_test_2_rem | changed )
+    )
+
+- name: add a dhcp-server network
+  mt_dhcp_server:
+    hostname:   "{{ mt_hostname }}"
+    username:   "{{ mt_user }}"
+    password:   "{{ mt_pass }}"
+    state:      "present"
+    parameter:  network
+    settings:
+      address: '192.168.10.0/24'
+
+- name: add a second dhcp-server network
+  mt_dhcp_server:
+    hostname:   "{{ mt_hostname }}"
+    username:   "{{ mt_user }}"
+    password:   "{{ mt_pass }}"
+    state:      "present"
+    parameter:  network
+    settings:
+      address: 10.147.172.0/24
+      comment: "Phones network"
+      dns-server: 10.147.172.2
+      gateway: 10.147.172.1
+
+- name: ALWAYS_CHANGES modify a second dhcp-server network
+  mt_dhcp_server:
+    hostname:   "{{ mt_hostname }}"
+    username:   "{{ mt_user }}"
+    password:   "{{ mt_pass }}"
+    state:      "present"
+    parameter:  network
+    settings:
+      address: 10.147.172.0/24
+      comment: "Phones network"
+      dns-server: 10.147.172.20
+      gateway: 10.147.172.1
+  register: dhcp_network_mod
+  failed_when: (
+      not ansible_check_mode
+    ) and (
+      not ( dhcp_network_mod | changed )
+    )
+
+- name: ALWAYS_CHANGES remove first dhcp-server network
+  mt_dhcp_server:
+    hostname:   "{{ mt_hostname }}"
+    username:   "{{ mt_user }}"
+    password:   "{{ mt_pass }}"
+    state:      "absent"
+    parameter:  network
+    settings:
+      address: '192.168.10.0/24'
+  register: dhcp_network_rem
+  failed_when: (
+      not ansible_check_mode
+    ) and (
+      not ( dhcp_network_rem | changed )
+    )
+
+- name: Test adding an item to dhcp-server options
+  mt_dhcp_server:
+    hostname:   "{{ mt_hostname }}"
+    username:   "{{ mt_user }}"
+    password:   "{{ mt_pass }}"
+    state:      "present"
+    parameter:  option
+    settings:
+      name: ansible_test
+      code: "251"

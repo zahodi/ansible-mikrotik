@@ -1,0 +1,74 @@
+---
+- name: edit default security-profiles item
+  mt_interface_wireless:
+    hostname: "{{ mt_hostname }}"
+    username: "{{ mt_user }}"
+    password: "{{ mt_pass }}"
+    parameter: security-profiles
+    state:     present
+    settings:
+      name: test1
+      supplicant-identity: test
+
+- name: add security-profiles item
+  mt_interface_wireless:
+    hostname: "{{ mt_hostname }}"
+    username: "{{ mt_user }}"
+    password: "{{ mt_pass }}"
+    parameter: security-profiles
+    state:     present
+    settings:
+      name: test1
+      supplicant-identity: test
+      management-protection: required
+
+- name: NEVER_CHANGES add security-profiles item, check idempotency
+  mt_interface_wireless:
+    hostname: "{{ mt_hostname }}"
+    username: "{{ mt_user }}"
+    password: "{{ mt_pass }}"
+    parameter: security-profiles
+    state:     present
+    settings:
+      name: test1
+      supplicant-identity: test
+  register: security_prof_idem
+  failed_when: (
+      not ansible_check_mode
+    ) and (
+      ( security_prof_idem | changed )
+    )
+
+- name: ALWAYS_CHANGES add security-profiles item, check idempotency
+  mt_interface_wireless:
+    hostname: "{{ mt_hostname }}"
+    username: "{{ mt_user }}"
+    password: "{{ mt_pass }}"
+    parameter: security-profiles
+    state:     present
+    settings:
+      name: test1
+      supplicant-identity: test
+      management-protection: allowed
+  register: security_prof_edit
+  failed_when: (
+      not ansible_check_mode
+    ) and (
+      not ( security_prof_edit | changed )
+    )
+
+- name: ALWAYS_CHANGES rem security-profiles item
+  mt_interface_wireless:
+    hostname: "{{ mt_hostname }}"
+    username: "{{ mt_user }}"
+    password: "{{ mt_pass }}"
+    parameter: security-profiles
+    state:     absent
+    settings:
+      name: test1
+  register: security_prof_rem
+  failed_when: (
+      not ansible_check_mode
+    ) and (
+      not ( security_prof_rem | changed )
+    )

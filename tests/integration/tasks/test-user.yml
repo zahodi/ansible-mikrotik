@@ -1,0 +1,96 @@
+---
+- name: add a group
+  mt_command:
+    hostname: "{{ mt_hostname }}"
+    username: "{{ mt_user }}"
+    password: "{{ mt_pass }}"
+    command:   /user/group/add
+    command_arguments:
+      name: group_test1
+      policy: read,write,web,!local,!telnet,!ssh
+      comment: ansible_test
+  failed_when: false
+
+- name: edit group
+  mt_command:
+    hostname: "{{ mt_hostname }}"
+    username: "{{ mt_user }}"
+    password: "{{ mt_pass }}"
+    command:   /user/group/set
+    command_arguments:
+      numbers: 3
+      name: group_test1
+      comment: ansible_test2
+
+- name: edit group
+  mt_command:
+    hostname: "{{ mt_hostname }}"
+    username: "{{ mt_user }}"
+    password: "{{ mt_pass }}"
+    command:   /user/group/set
+    command_arguments:
+      name: group_test1
+      policy: read,write,web,winbox
+
+- name: add a test user to mikrotik
+  mt_user:
+    hostname: "{{ mt_hostname }}"
+    username: "{{ mt_user }}"
+    password: "{{ mt_pass }}"
+    parameter: user
+    state:    present
+    settings:
+      name: user_test1
+      group: read
+      password: 123
+  changed_when: False
+
+- name: NEVER_CHANGES, check idempotency add a user
+  mt_user:
+    hostname: "{{ mt_hostname }}"
+    username: "{{ mt_user }}"
+    password: "{{ mt_pass }}"
+    parameter: user
+    state:    present
+    settings:
+      name: user_test1
+      group: read
+  register: user_add
+  failed_when: (
+      not ansible_check_mode
+    ) and (
+     ( user_add | changed )
+    )
+
+- name: ALWAYS_CHANGES modify user
+  mt_user:
+    hostname: "{{ mt_hostname }}"
+    username: "{{ mt_user }}"
+    password: "{{ mt_pass }}"
+    parameter: user
+    state:    present
+    settings:
+      name: user_test1
+      group: group_test1
+  register: user_edit
+  failed_when: (
+      not ansible_check_mode
+    ) and (
+      not ( user_edit | changed )
+    )
+
+- name: ALWAYS_CHANGES remove user
+  mt_user:
+    hostname: "{{ mt_hostname }}"
+    username: "{{ mt_user }}"
+    password: "{{ mt_pass }}"
+    parameter: user
+    state:    absent
+    settings:
+      name: user_test1
+  register: user_rem
+  failed_when: (
+      not ansible_check_mode
+    ) and (
+      not ( user_rem | changed )
+    )

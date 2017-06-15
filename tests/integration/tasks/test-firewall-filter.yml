@@ -1,0 +1,238 @@
+---
+- name: Test adding firewall filter rules
+  mt_ip_firewall:
+    hostname:   "{{ mt_hostname }}"
+    username:   "{{ mt_user }}"
+    password:   "{{ mt_pass }}"
+    state:      "present"
+    parameter: filter
+    rule: "{{ item }}"
+  with_items:
+    - action: accept
+      chain: forward
+      comment: 'Ansible - fw filter rule1'
+      place-before: '0'
+    - action: accept
+      chain: input
+      comment: 'Ansible - fw filter rule2'
+      place-before: '1'
+    - action: passthrough
+      chain: input
+      comment: 'Ansible - fw filter rule3'
+      place-before: '2'
+    - action: reject
+      chain: forward
+      comment: 'Ansible - fw filter rule4'
+      place-before: '3'
+      src-address: 192.168.0.0/16
+    - action: accept
+      chain: forward
+      comment: 'Ansible - fw filter rule5'
+      place-before: '4'
+
+- name: add some manual rules to simulate chaos, command module
+  mt_command:
+    hostname: "{{ mt_hostname }}"
+    username: "{{ mt_user }}"
+    password: "{{ mt_pass }}"
+    command:  /ip/firewall/filter/add
+    command_arguments: "{{ item }}"
+  with_items:
+    - action: accept
+      chain: output
+      comment: 'manual test rules'
+      place-before: '3'
+    - action: accept
+      chain: output
+      comment: 'manual test rules'
+      place-before: '1'
+    - action: accept
+      chain: output
+      comment: 'manual test rules'
+      place-before: '0'
+
+- name: Fix firewall state
+  mt_ip_firewall:
+    hostname:   "{{ mt_hostname }}"
+    username:   "{{ mt_user }}"
+    password:   "{{ mt_pass }}"
+    state:      "present"
+    parameter: filter
+    rule: "{{ item }}"
+  with_items:
+    - action: accept
+      chain: forward
+      comment: 'Ansible - fw filter rule1'
+      place-before: '0'
+    - action: accept
+      chain: input
+      comment: 'Ansible - fw filter rule2'
+      place-before: '1'
+    - action: passthrough
+      chain: input
+      comment: 'Ansible - fw filter rule3'
+      place-before: '2'
+    - action: reject
+      chain: forward
+      comment: 'Ansible - fw filter rule4'
+      place-before: '3'
+      src-address: 192.168.0.0/16
+    - action: accept
+      chain: forward
+      comment: 'Ansible - fw filter rule5'
+      place-before: '4'
+
+- name: NEVER_CHANGES, check idempotency
+  mt_ip_firewall:
+    hostname:   "{{ mt_hostname }}"
+    username:   "{{ mt_user }}"
+    password:   "{{ mt_pass }}"
+    state:      "present"
+    parameter: filter
+    rule: "{{ item }}"
+  with_items:
+    - action: accept
+      chain: forward
+      comment: 'Ansible - fw filter rule1'
+      place-before: '0'
+    - action: accept
+      chain: input
+      comment: 'Ansible - fw filter rule2'
+      place-before: '1'
+    - action: passthrough
+      chain: input
+      comment: 'Ansible - fw filter rule3'
+      place-before: '2'
+    - action: reject
+      chain: forward
+      comment: 'Ansible - fw filter rule4'
+      place-before: '3'
+      src-address: 192.168.0.0/16
+    - action: accept
+      chain: forward
+      comment: 'Ansible - fw filter rule5'
+      place-before: '4'
+  register: check_idem
+  failed_when: (
+      not ansible_check_mode
+    ) and (
+      ( check_idem | changed )
+    )
+  tags: test-firewall
+
+- name: ALWAYS_CHANGES Test editing existing rule
+  mt_ip_firewall:
+    hostname:   "{{ mt_hostname }}"
+    username:   "{{ mt_user }}"
+    password:   "{{ mt_pass }}"
+    state:      "present"
+    parameter: filter
+    rule: "{{ item }}"
+  with_items:
+    - action: accept
+      chain: forward
+      comment: 'Ansible - fw filter rule4'
+      src-address: 192.168.0.0/16
+      place-before: '3'
+  register: edit_filter_rule
+  failed_when: (
+      not ansible_check_mode
+    ) and (
+      not ( edit_filter_rule | changed )
+    )
+
+- name: NEVER_CHANGES Test editing existing rule check idempotency again
+  mt_ip_firewall:
+    hostname:   "{{ mt_hostname }}"
+    username:   "{{ mt_user }}"
+    password:   "{{ mt_pass }}"
+    state:      "present"
+    parameter: filter
+    rule: "{{ item }}"
+  with_items:
+    - action: accept
+      chain: forward
+      comment: 'Ansible - fw filter rule4'
+      src-address: 192.168.0.0/16
+      place-before: '3'
+  register: edit_filter_rule_2
+  failed_when: (
+      not ansible_check_mode
+    ) and (
+      ( edit_filter_rule_2 | changed )
+    )
+  tags: test-firewall
+
+- name: add a rule to the bottom of the chain
+  mt_ip_firewall:
+    hostname:   "{{ mt_hostname }}"
+    username:   "{{ mt_user }}"
+    password:   "{{ mt_pass }}"
+    state:      "present"
+    parameter: filter
+    rule: "{{ item }}"
+  with_items:
+    - action: accept
+      chain: forward
+      comment: 'Ansible - fw filter rule20'
+      src-address: 192.150.0.0/16
+      place-before: '20'
+
+- name: ALWAYS_CHANGES, ensure that rule at the bottom changes
+  mt_ip_firewall:
+    hostname:   "{{ mt_hostname }}"
+    username:   "{{ mt_user }}"
+    password:   "{{ mt_pass }}"
+    state:      "present"
+    parameter: filter
+    rule: "{{ item }}"
+  with_items:
+    - action: reject
+      chain: forward
+      comment: 'Ansible - fw filter rule20'
+      src-address: 192.150.0.0/16
+      place-before: '20'
+  register: edit_filter_rule_3
+  failed_when: (
+      not ansible_check_mode
+    ) and (
+      not ( edit_filter_rule_3 | changed )
+    )
+
+- name: NEVER_CHANGES add a rule to the bottom of the chain, check_idempotency
+  mt_ip_firewall:
+    hostname:   "{{ mt_hostname }}"
+    username:   "{{ mt_user }}"
+    password:   "{{ mt_pass }}"
+    state:      "present"
+    parameter: filter
+    rule: "{{ item }}"
+  with_items:
+    - action: reject
+      chain: forward
+      comment: 'Ansible - fw filter rule20'
+      src-address: 192.150.0.0/16
+      place-before: '20'
+  register: edit_filter_rule_4
+  failed_when: (
+      not ansible_check_mode
+    ) and (
+      ( edit_filter_rule_4 | changed )
+    )
+
+- name: ALWAYS_CHANGES Test removing existing rule
+  mt_ip_firewall:
+    hostname:   "{{ mt_hostname }}"
+    username:   "{{ mt_user }}"
+    password:   "{{ mt_pass }}"
+    state:      "absent"
+    parameter: filter
+    rule: "{{ item }}"
+  with_items:
+    - place-before: '4'
+  register: rem_filter_rule
+  failed_when: (
+      not ansible_check_mode
+    ) and (
+      not ( rem_filter_rule | changed )
+    )

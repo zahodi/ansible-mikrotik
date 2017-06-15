@@ -1,0 +1,27 @@
+---
+- name: add scheduler
+  mt_system_scheduler:
+    hostname: "{{ mt_hostname }}"
+    username: "{{ mt_user }}"
+    password: "{{ mt_pass }}"
+    state:    present
+    name:     ansible_test
+    on_event: 'put "test"'
+    interval: 1s
+
+- name: run command to disable system scheduler task
+  mt_command:
+    hostname: "{{ mt_hostname }}"
+    username: "{{ mt_user }}"
+    password: "{{ mt_pass }}"
+    command:   /system/scheduler/disable
+    command_arguments:
+      numbers: ansible_test
+
+- name: run command
+  mt_command:
+    hostname: "{{ mt_hostname }}"
+    username: "{{ mt_user }}"
+    password: "{{ mt_pass }}"
+    command:  "/interface/print"
+  tags: print
