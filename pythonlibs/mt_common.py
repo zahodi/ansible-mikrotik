@@ -22,6 +22,12 @@ def clean_params(params):
         del params[key]
         continue
 
+      new_key = re.sub('_', '-', key)
+      if new_key != key:
+        params[new_key] = str(params[key])
+        del params[key]
+        continue
+
       if params[key] == "yes":
         params[key] = "true"
       if params[key] == "no":
