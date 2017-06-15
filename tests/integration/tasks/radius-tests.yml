@@ -1,0 +1,129 @@
+- name: Test adding a radius item
+  mt_radius:
+    hostname:   "{{ mt_hostname }}"
+    username:   "{{ mt_user }}"
+    password:   "{{ mt_pass }}"
+    state:      "present"
+    parameter:  radius
+    settings:
+      address:     "192.168.12.2"
+      comment:    'Ansible - radius test 1'
+      secret:     'password'
+      service:
+        - login
+        - hotspot
+        - wireless
+      timeout:        '2s500ms'
+
+- name: ALWAYS_CHANGES Test editing an existing radius item (change address)
+  mt_radius:
+    hostname:   "{{ mt_hostname }}"
+    username:   "{{ mt_user }}"
+    password:   "{{ mt_pass }}"
+    state:      "present"
+    parameter:  radius
+    settings:
+      address:     "192.168.12.19"
+      comment:    'Ansible - radius test 1'
+      secret:     'password'
+      service:
+        - login
+        - hotspot
+        - wireless
+        - dhcp
+      timeout:        '2s500ms'
+  register: radius_test_1_edit
+  failed_when: (
+      not ansible_check_mode
+    ) and (
+      not ( radius_test_1_edit | changed )
+    )
+
+- name: ALWAYS_CHANGES Test editing an existing radius item (change address back)
+  mt_radius:
+    hostname:   "{{ mt_hostname }}"
+    username:   "{{ mt_user }}"
+    password:   "{{ mt_pass }}"
+    state:      "present"
+    parameter:  radius
+    settings:
+      address:     "192.168.12.2"
+      comment:    'Ansible - radius test 1'
+      secret:     'password'
+      service:
+        - login
+        - hotspot
+        - wireless
+      timeout:        '2s500ms'
+  register: radius_test_1_edit
+  failed_when: (
+      not ansible_check_mode
+    ) and (
+      not ( radius_test_1_edit | changed )
+    )
+
+- name: Test adding a duplicate of the first radius item
+  mt_radius:
+    hostname:   "{{ mt_hostname }}"
+    username:   "{{ mt_user }}"
+    password:   "{{ mt_pass }}"
+    state:      "present"
+    parameter:  radius
+    settings:
+      address:     "192.168.12.2"
+      comment:    'Ansible - radius test 1'
+      secret:     'password'
+      service:
+        - login
+        - hotspot
+        - wireless
+      timeout:        '2s500ms'
+  register: radius_test_1_duplicate
+  failed_when: (
+      not ansible_check_mode
+    ) and (
+      ( radius_test_1_duplicate|changed )
+    )
+
+- name: ALWAYS_CHANGES Test adding another radius item to later remove
+  mt_radius:
+    hostname:   "{{ mt_hostname }}"
+    username:   "{{ mt_user }}"
+    password:   "{{ mt_pass }}"
+    state:      "present"
+    parameter:  radius
+    settings:
+      address:     "192.168.12.2"
+      comment:    'Ansible - radius test 2'
+      secret:     'password'
+      service:
+        - login
+        - hotspot
+        - wireless
+      timeout:        '2s500ms'
+  register: radius_test_2
+  failed_when: (
+      not ansible_check_mode
+    ) and (
+      not ( radius_test_2 | changed )
+    )
+
+- name: ALWAYS_CHANGES Test removing a radius item
+  mt_radius:
+    hostname:   "{{ mt_hostname }}"
+    username:   "{{ mt_user }}"
+    password:   "{{ mt_pass }}"
+    state:      "absent"
+    parameter:  radius
+    settings:
+      comment:    'Ansible - radius test 2'
+  register: radius_test_2_rem
+  failed_when: (
+      not ansible_check_mode
+    ) and (
+      not ( radius_test_2_rem | changed )
+    )
+
+#    incoming:
+#      accept: "true"
+#      port: "37988"

@@ -1,0 +1,197 @@
+- name: add a hotspot profile
+  mt_hotspot:
+    hostname: "{{ mt_hostname }}"
+    username: "{{ mt_user }}"
+    password: "{{ mt_pass }}"
+    state:    present
+    parameter: profile
+    settings:
+      dns-name: internet.com
+      login-by: http-pap
+      name: Hotspot1
+      radius-interim-update: 3m
+      use-radius: "yes"
+
+- name: NEVER_CHANGES add a hotspot profile, check idempotency
+  mt_hotspot:
+    hostname: "{{ mt_hostname }}"
+    username: "{{ mt_user }}"
+    password: "{{ mt_pass }}"
+    parameter: profile
+    state:    present
+    settings:
+      dns-name: internet.com
+      login-by: http-pap
+      name: Hotspot1
+      radius-interim-update: 3m
+      use-radius: "yes"
+  register: profile_add
+  failed_when: (
+      not ansible_check_mode
+    ) and (
+      ( profile_add | changed )
+    )
+
+- name: ALWAYS_CHANGES edit a hotspot profile, check changes
+  mt_hotspot:
+    hostname: "{{ mt_hostname }}"
+    username: "{{ mt_user }}"
+    password: "{{ mt_pass }}"
+    parameter: profile
+    state:    present
+    settings:
+      dns-name: internet.com
+      login-by: http-pap
+      name: Hotspot1
+      radius-interim-update: 4m
+      use-radius: "yes"
+  register: profile_edit
+  failed_when: not  ( profile_edit | changed )
+
+- name: add a hotspot
+  mt_hotspot:
+    hostname: "{{ mt_hostname }}"
+    username: "{{ mt_user }}"
+    password: "{{ mt_pass }}"
+    parameter: hotspot
+    state:    present
+    settings:
+      address-pool: pool1
+      disabled: "no"
+      interface: ether2
+      name: NETACCESS1
+      profile: Hotspot1
+      idle-timeout: 3s
+
+- name: NEVER_CHANGES add a hotspot again, check idempotency
+  mt_hotspot:
+    hostname: "{{ mt_hostname }}"
+    username: "{{ mt_user }}"
+    password: "{{ mt_pass }}"
+    state:    present
+    parameter: hotspot
+    settings:
+      address-pool: pool1
+      disabled: "no"
+      interface: ether2
+      name: NETACCESS1
+      profile: Hotspot1
+      idle-timeout: 3s
+  register: hotspot_add
+  failed_when: (
+      not ansible_check_mode
+    ) and (
+      ( hotspot_add | changed )
+    )
+
+- name: ALWAYS_CHANGES edit a hotspot, check changes
+  mt_hotspot:
+    hostname: "{{ mt_hostname }}"
+    username: "{{ mt_user }}"
+    password: "{{ mt_pass }}"
+    state:    present
+    parameter: hotspot
+    settings:
+      address-pool: pool1
+      disabled: "no"
+      interface: ether2
+      name: NETACCESS1
+      profile: Hotspot1
+      idle-timeout: 4s
+  register: hotspot_edit
+  failed_when: not ( hotspot_edit | changed )
+
+- name: add a walled-garden
+  mt_hotspot:
+    hostname: "{{ mt_hostname }}"
+    username: "{{ mt_user }}"
+    password: "{{ mt_pass }}"
+    state:    present
+    parameter: walled-garden
+    settings:
+      comment: "Allow Personal Web Portal"
+      dst-host: google.com
+      server: NETACCESS1
+      method: PUT
+
+- name: NEVER_CHANGES add a walled-garden, check idempotency
+  mt_hotspot:
+    hostname: "{{ mt_hostname }}"
+    username: "{{ mt_user }}"
+    password: "{{ mt_pass }}"
+    state:    present
+    parameter: walled-garden
+    settings:
+      comment: "Allow Personal Web Portal"
+      dst-host: google.com
+      server: NETACCESS1
+      method: PUT
+  register: walled_garden_add
+  failed_when: (
+      not ansible_check_mode
+    ) and (
+      ( walled_garden_add | changed )
+    )
+
+- name: ALWAYS_CHANGES edit walled-garden settings, check changes
+  mt_hotspot:
+    hostname: "{{ mt_hostname }}"
+    username: "{{ mt_user }}"
+    password: "{{ mt_pass }}"
+    state:    present
+    parameter: walled-garden
+    settings:
+      comment: "Allow Personal Web Portal"
+      dst-host: google.com
+      server: NETACCESS1
+      method: TRACE
+  register: walled_garden_edit
+  failed_when: not ( walled_garden_edit | changed )
+
+- name: ALWAYS_CHANGES remove walled-garden
+  mt_hotspot:
+    hostname: "{{ mt_hostname }}"
+    username: "{{ mt_user }}"
+    password: "{{ mt_pass }}"
+    state:    absent
+    parameter: walled-garden
+    settings:
+      comment: "Allow Personal Web Portal"
+  register: walled_garden_rem
+  failed_when: (
+      not ansible_check_mode
+    ) and (
+      not ( walled_garden_rem | changed )
+    )
+
+- name: ALWAYS_CHANGES remove a hotspot
+  mt_hotspot:
+    hostname: "{{ mt_hostname }}"
+    username: "{{ mt_user }}"
+    password: "{{ mt_pass }}"
+    parameter: hotspot
+    state:    absent
+    settings:
+      name: NETACCESS1
+  register: hotspot_rem
+  failed_when: (
+      not ansible_check_mode
+    ) and (
+      not ( hotspot_rem | changed )
+    )
+
+- name: ALWAYS_CHANGES remove a hotspot profile
+  mt_hotspot:
+    hostname: "{{ mt_hostname }}"
+    username: "{{ mt_user }}"
+    password: "{{ mt_pass }}"
+    parameter: profile
+    state:    absent
+    settings:
+      name: Hotspot1
+  register: profile_rem
+  failed_when: (
+      not ansible_check_mode
+    ) and (
+      not ( profile_rem | changed )
+    )

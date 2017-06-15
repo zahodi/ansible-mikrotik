@@ -1,39 +1,13 @@
 #!/usr/bin/env python
 import mt_api
 import re
-
-      if 'policy' in ansible_scheduler_params:
-        dif_list = []
-        if 'policy' in mikrotik_scheduler_task:
-          policy = mikrotik_scheduler_task['policy'].split(',')
-          dif_list = set(ansible_scheduler_params['policy']) & set(policy)
-
-        if dif_list == []:
-          list_to_string = ""
-          list_to_string = ','.join(map(str, ansible_scheduler_params['policy']))
-          scheduler_diff_keys['policy'] = list_to_string
-
-      for key in ansible_scheduler_params:
-        if key != 'policy':
-          if key in mikrotik_scheduler_task:
-            if ansible_scheduler_params[key] != mikrotik_scheduler_task[key]:
-              scheduler_diff_keys[key] = ansible_scheduler_params[key]
-          else:
-            scheduler_diff_keys[key] = ansible_scheduler_params[key]
-      if scheduler_diff_keys != {}:
-        scheduler_diff_keys['numbers'] = client_id
-        if not check_mode:
-          mk.api_edit(base_path=api_path, params=scheduler_diff_keys)
-        changed = True
-        changed_message.append(
-          "Changed scheduler task : " + ansible_scheduler_params['name']
-        )
+import sys
 
 
-def list_string(ansible_list, mikrotik_string):
-  list_to_string = ""
-  list_to_string = ','.join(map(str, ansible_scheduler_params['policy']))
-  scheduler_diff_keys['policy'] = list_to_string
+def list_to_string(list):
+  list_string = ""
+  list_string = ','.join(map(str, list))
+  return list_string
 
 
 def clean_params(params):
@@ -150,6 +124,11 @@ class MikrotikIdempotent():
     # When current_param is empty we need to call api_add method to add
     # all the parameters in the desired_params
     if self.current_param is None:
+      # check if we have a list within the dictionary
+      # convert the list to string to pass to mikrotik
+      for i in self.desired_params:
+        if isinstance(self.desired_params[i], list):
+          self.desired_params[i] = list_to_string(self.desired_params[i])
       self.new_params = self.desired_params
       self.old_params = ""
       if not self.check_mode:
@@ -179,18 +158,32 @@ class MikrotikIdempotent():
 
   def edit(self):
     out_params = {}
-    old_params = {} #used to store values of params we change
+    old_params = {}  # used to store values of params we change
 
     # iterate over items in desired params and match against items in current_param
     # to figure out the difference
     for desired_param in self.desired_params:
-      self.desired_params[desired_param] = str(self.desired_params[desired_param])
       if desired_param in self.current_param:
-        if self.current_param[desired_param] != self.desired_params[desired_param]:
-          out_params[desired_param] = self.desired_params[desired_param]
-          old_params[desired_param] = self.current_param[desired_param]
+        # check if we have a list within the dictionary
+        # convert mikrotik string to list to get a diff
+        if isinstance(self.desired_params[desired_param], list):
+          dif_list = []
+          if desired_param in self.current_param:
+            current_param_list = self.current_param[desired_param].split(',')
+            dif_list = set(self.desired_params[desired_param]) - set(current_param_list)
+          else:
+            out_params[desired_param] = list_to_string(self.desired_params[desired_param])
+          if dif_list:
+            out_params[desired_param] = list_to_string(self.desired_params[desired_param])
+            old_params[desired_param] = self.current_param[desired_param]
+          continue
+        if self.current_param[desired_param] != str(self.desired_params[desired_param]):
+          out_params[desired_param] = str(self.desired_params[desired_param])
+          old_params[desired_param] = str(self.current_param[desired_param])
       else:
-        out_params[desired_param] = self.desired_params[desired_param]
+        if isinstance(desired_param, list):
+          out_params[desired_param] = list_to_string(self.desired_params[desired_param])
+        out_params[desired_param] = str(self.desired_params[desired_param])
         if desired_param in self.current_param:
           old_params[desired_param] = self.current_param[desired_param]
 
