@@ -1,0 +1,87 @@
+---
+- name: set email settings
+  mt_tool:
+    hostname: "{{ mt_hostname }}"
+    username: "{{ mt_user }}"
+    password: "{{ mt_pass }}"
+    parameter: e-mail
+    settings:
+      address: 192.168.1.2
+      from: email@localhost.com
+
+- name: ALWAYS_CHANGES set email settings
+  mt_tool:
+    hostname: "{{ mt_hostname }}"
+    username: "{{ mt_user }}"
+    password: "{{ mt_pass }}"
+    parameter: e-mail
+    settings:
+      address: 192.168.1.3
+      from: email@localhost.com
+  register: email_edit
+  failed_when: (
+      not ansible_check_mode
+    ) and (
+      not ( email_edit | changed )
+    )
+
+- name: add netwatch item
+  mt_tool:
+    hostname: "{{ mt_hostname }}"
+    username: "{{ mt_user }}"
+    password: "{{ mt_pass }}"
+    parameter: netwatch
+    state:     present
+    settings:
+      host: '192.168.10.1'
+      up-script: test
+
+- name: NEVER_CHANGES add netwatch item, idempotency check
+  mt_tool:
+    hostname: "{{ mt_hostname }}"
+    username: "{{ mt_user }}"
+    password: "{{ mt_pass }}"
+    parameter: netwatch
+    state:     present
+    settings:
+      host: '192.168.10.1'
+      up-script: test
+  register: netwatch_idem
+  failed_when: (
+      not ansible_check_mode
+    ) and (
+      ( netwatch_idem | changed )
+    )
+
+- name: ALWAYS_CHANGES edit netwatch item, change up-script
+  mt_tool:
+    hostname: "{{ mt_hostname }}"
+    username: "{{ mt_user }}"
+    password: "{{ mt_pass }}"
+    parameter: netwatch
+    state:     present
+    settings:
+      host: '192.168.10.1'
+      up-script: test2
+  register: netwatch_edit
+  failed_when: (
+      not ansible_check_mode
+    ) and (
+      not ( netwatch_edit | changed )
+    )
+
+- name: ALWAYS_CHANGES remove netwatch item
+  mt_tool:
+    hostname: "{{ mt_hostname }}"
+    username: "{{ mt_user }}"
+    password: "{{ mt_pass }}"
+    parameter: netwatch
+    state:     absent
+    settings:
+      host: '192.168.10.1'
+  register: netwatch_rem
+  failed_when: (
+      not ansible_check_mode
+    ) and (
+      not ( netwatch_rem | changed )
+    )

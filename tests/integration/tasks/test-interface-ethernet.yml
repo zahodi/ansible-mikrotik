@@ -1,0 +1,60 @@
+---
+- name: Add comment to ether1
+  mt_interfaces:
+    hostname: "{{ mt_hostname }}"
+    username: "{{ mt_user }}"
+    password: "{{ mt_pass }}"
+    settings: "{{ item.settings }}"
+    parameter: "ethernet"
+  with_items:
+    - settings:
+        name:     ether1
+        comment:  Ansible controlled ether1
+
+- name: Add comment to ether1 again (idempotency test)
+  mt_interfaces:
+    hostname: "{{ mt_hostname }}"
+    username: "{{ mt_user }}"
+    password: "{{ mt_pass }}"
+    settings: "{{ item.settings }}"
+    parameter: "ethernet"
+  with_items:
+    - settings:
+        name:     ether1
+        comment:  Ansible controlled ether1
+  register: ether1_comment
+  failed_when: (
+      not ansible_check_mode
+    ) and (
+      ( ether1_comment | changed )
+    )
+
+- name: USUALLY_CHANGES Modify mtu of ether2
+  mt_interfaces:
+    hostname: "{{ mt_hostname }}"
+    username: "{{ mt_user }}"
+    password: "{{ mt_pass }}"
+    settings: "{{ item.settings }}"
+    parameter: "ethernet"
+  with_items:
+    - settings:
+        name:     ether2
+        mtu:      1500
+
+- name: ALWAYS_CHANGES Modify mtu of ether2
+  mt_interfaces:
+    hostname: "{{ mt_hostname }}"
+    username: "{{ mt_user }}"
+    password: "{{ mt_pass }}"
+    settings: "{{ item.settings }}"
+    parameter: "ethernet"
+  with_items:
+    - settings:
+        name:     ether2
+        mtu:      1501
+  register: ether2_mtu
+  failed_when: (
+      not ansible_check_mode
+    ) and (
+      not ( ether2_mtu | changed )
+    )

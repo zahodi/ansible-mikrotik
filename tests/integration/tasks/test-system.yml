@@ -1,0 +1,109 @@
+---
+- name: set identity
+  mt_system:
+    hostname: "{{ mt_hostname }}"
+    username: "{{ mt_user }}"
+    password: "{{ mt_pass }}"
+    parameter: identity
+    settings:
+      name: Test_mikrotik
+
+- name: set routerboard settings on physical device
+  mt_system:
+    hostname: "{{ mt_hostname }}"
+    username: "{{ mt_user }}"
+    password: "{{ mt_pass }}"
+    parameter: routerboard_settings
+    settings:
+      #protected-routerboot: disabled
+      boot-protocol: dhcp
+  when: '"127.0.0.1" not in mt_hostname'
+  tags: routerboard_settings
+
+- name: set clock
+  mt_system:
+    hostname: "{{ mt_hostname }}"
+    username: "{{ mt_user }}"
+    password: "{{ mt_pass }}"
+    parameter: clock
+    settings:
+      time-zone-autodetect: "no"
+      time-zone-name: Greenwich
+
+- name: ALWAYS_CHANGES modify clock, change time-zone-name
+  mt_system:
+    hostname: "{{ mt_hostname }}"
+    username: "{{ mt_user }}"
+    password: "{{ mt_pass }}"
+    parameter: clock
+    settings:
+      time-zone-name: GMT
+  register: mt_clock
+  failed_when: (
+      not ansible_check_mode
+    ) and (
+      not ( mt_clock | changed )
+    )
+
+- name: set ntp client
+  mt_system:
+    hostname: "{{ mt_hostname }}"
+    username: "{{ mt_user }}"
+    password: "{{ mt_pass }}"
+    parameter: ntp_client
+    settings:
+      enabled: "yes"
+      primary-ntp: 199.182.221.11
+      secondary-ntp: 67.215.197.149
+
+- name: NEVER_CHANGES set ntp client, check idempotency
+  mt_system:
+    hostname: "{{ mt_hostname }}"
+    username: "{{ mt_user }}"
+    password: "{{ mt_pass }}"
+    parameter: ntp_client
+    settings:
+      enabled: "yes"
+      primary-ntp: 199.182.221.11
+      secondary-ntp: 67.215.197.149
+  register: mt_ntp_client
+  failed_when: (
+      not ansible_check_mode
+    ) and (
+      ( mt_ntp_client | changed )
+    )
+
+- name: ALWAYS_CHANGES modify ntp client
+  mt_system:
+    hostname: "{{ mt_hostname }}"
+    username: "{{ mt_user }}"
+    password: "{{ mt_pass }}"
+    parameter: ntp_client
+    settings:
+      enabled: "no"
+      primary-ntp: 199.182.221.11
+      secondary-ntp: 67.215.197.149
+  register: mt_ntp_client_change
+  failed_when: (
+      not ansible_check_mode
+    ) and (
+      not ( mt_ntp_client_change | changed )
+    )
+
+##############################################
+# WIP
+###############################################
+- name: modify logging
+  mt_system:
+    hostname: "{{ mt_hostname }}"
+    username: "{{ mt_user }}"
+    password: "{{ mt_pass }}"
+    parameter: logging
+    settings: "{{ item }}"
+  with_items:
+    - numbers: "0"
+      action: disk
+      disabled: "yes"
+    - numbers: "1"
+      action: memory
+      disabled: "yes"

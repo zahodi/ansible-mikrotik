@@ -1,6 +1,13 @@
 #!/usr/bin/env python
 import mt_api
 import re
+import sys
+
+
+def list_to_string(list):
+  list_string = ""
+  list_string = ','.join(map(str, list))
+  return list_string
 
 
 def clean_params(params):
@@ -117,6 +124,11 @@ class MikrotikIdempotent():
     # When current_param is empty we need to call api_add method to add
     # all the parameters in the desired_params
     if self.current_param is None:
+      # check if we have a list within the dictionary
+      # convert the list to string to pass to mikrotik
+      for i in self.desired_params:
+        if isinstance(self.desired_params[i], list):
+          self.desired_params[i] = list_to_string(self.desired_params[i])
       self.new_params = self.desired_params
       self.old_params = ""
       if not self.check_mode:
@@ -145,21 +157,41 @@ class MikrotikIdempotent():
       self.changed = True
 
   def edit(self):
+    # out_params is used to pass to api_edit() to make changes
+    # to a mikrotik device
     out_params = {}
-    old_params = {} #used to store values of params we change
+    # old_params used storing old values that are going to be changed
+    # to aid in the diff output
+    old_params = {}  # used to store values of params we change
 
-    # iterate over items in desired params and match against items in current_param
+    # iterate over items in desired params and
+    # match against items in current_param
     # to figure out the difference
     for desired_param in self.desired_params:
-      self.desired_params[desired_param] = str(self.desired_params[desired_param])
+      # check if a desired item is already set in mikrotik
       if desired_param in self.current_param:
-        if self.current_param[desired_param] != self.desired_params[desired_param]:
-          out_params[desired_param] = self.desired_params[desired_param]
-          old_params[desired_param] = self.current_param[desired_param]
+        # check if we have a list within the dictionary
+        # convert mikrotik string to list to get a diff
+        if isinstance(self.desired_params[desired_param], list):
+          if desired_param in self.current_param:
+            current_param_list = self.current_param[desired_param].split(',')
+            if set(self.desired_params[desired_param]) != set(current_param_list):
+              out_params[desired_param] = list_to_string(self.desired_params[desired_param])
+              old_params[desired_param] = str(self.current_param[desired_param])
+          else:
+            out_params[desired_param] = list_to_string(self.desired_params[desired_param])
+        # value is not a list, move on and identify difference
+        else:
+          if self.current_param[desired_param] != str(self.desired_params[desired_param]):
+            out_params[desired_param] = str(self.desired_params[desired_param])
+            old_params[desired_param] = str(self.current_param[desired_param])
+      # since we didn't get a matching key from mikrotik settings
+      # we'll it the out_params to whatever is desired_param
       else:
-        out_params[desired_param] = self.desired_params[desired_param]
-        if desired_param in self.current_param:
-          old_params[desired_param] = self.current_param[desired_param]
+        if isinstance(desired_param, list):
+          out_params[desired_param] = list_to_string(self.desired_params[desired_param])
+        else:
+          out_params[desired_param] = str(self.desired_params[desired_param])
 
     # When out_params has been set it means we found our diff
     # and will set it on the mikrotik

@@ -1,0 +1,42 @@
+---
+- name: edit a interface discovery option
+  mt_neighbor:
+    hostname: "{{ mt_hostname }}"
+    username: "{{ mt_user }}"
+    password: "{{ mt_pass }}"
+    parameter: discovery
+    settings:
+      name: ether2
+      discover: "no"
+
+- name: NEVER_CHANGES edit a interface discovery option
+  mt_neighbor:
+    hostname: "{{ mt_hostname }}"
+    username: "{{ mt_user }}"
+    password: "{{ mt_pass }}"
+    parameter: discovery
+    settings:
+      name: ether2
+      discover: "no"
+  register: discovery_edit
+  failed_when: (
+      not ansible_check_mode
+    ) and (
+     ( discovery_edit | changed )
+    )
+
+- name: ALWAYS_CHANGES edit a interface discovery option
+  mt_neighbor:
+    hostname: "{{ mt_hostname }}"
+    username: "{{ mt_user }}"
+    password: "{{ mt_pass }}"
+    parameter: discovery
+    settings:
+      name: ether2
+      discover: "yes"
+  register: discovery_edit
+  failed_when: (
+      not ansible_check_mode
+    ) and (
+     not ( discovery_edit | changed )
+    )

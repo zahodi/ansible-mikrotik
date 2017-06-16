@@ -1,0 +1,93 @@
+---
+- name: Test adding ovpn-client
+  mt_interfaces:
+    hostname:  "{{ mt_hostname }}"
+    username:  "{{ mt_user }}"
+    password:  "{{ mt_pass }}"
+    state:     present
+    parameter: ovpn-client
+    settings:
+      comment: "ansible test 1"
+      user:    ansible_admin
+      connect-to:  192.168.50.170
+      name: ansible_test
+      password: 'blablabla'
+  tags: vpn-client-test
+
+- name: NEVER_CHANGES Test adding duplicate ovpn-client
+  mt_interfaces:
+    hostname:  "{{ mt_hostname }}"
+    username:  "{{ mt_user }}"
+    password:  "{{ mt_pass }}"
+    state:     present
+    parameter: ovpn-client
+    settings:
+      comment: "ansible test 1"
+      user:    ansible_admin
+      connect-to:  192.168.50.170
+      name: ansible_test
+      password: 'blablabla'
+  register: ovpn_client_test_1_add
+  failed_when: (
+      not ansible_check_mode
+    ) and (
+      ( ovpn_client_test_1_add | changed )
+    )
+  tags: vpn-client-test
+
+- name: ALWAYS_CHANGES Test editing an existing ovpn-client item (change address)
+  mt_interfaces:
+    hostname:  "{{ mt_hostname }}"
+    username:  "{{ mt_user }}"
+    password:  "{{ mt_pass }}"
+    state:     present
+    parameter: ovpn-client
+    settings:
+      comment: "ansible test 1"
+      user:    ansible_admin
+      connect-to:  192.168.50.171
+      auth: "null"
+      name: ansible_test
+      password: 'bar'
+  register: ovpn_client_test_1_edit
+  failed_when: (
+      not ansible_check_mode
+    ) and (
+      not ( ovpn_client_test_1_edit | changed )
+    )
+  tags: vpn-client-test
+
+- name: ALWAYS_CHANGES Test adding a second ovpn-client to later remove
+  mt_interfaces:
+    hostname:  "{{ mt_hostname }}"
+    username:  "{{ mt_user }}"
+    password:  "{{ mt_pass }}"
+    state:     present
+    parameter: ovpn-client
+    settings:
+      user:    ansible_admin
+      comment: "ansible test 2"
+      connect_to:  192.168.52.111
+      name: ansible_test2
+  register: ovpn_client_test_2_add
+  failed_when: (
+      not ansible_check_mode
+    ) and (
+      not ( ovpn_client_test_2_add | changed )
+    )
+
+- name: ALWAYS_CHANGES Test remove ovpn-client
+  mt_interfaces:
+    hostname:  "{{ mt_hostname }}"
+    username:  "{{ mt_user }}"
+    password:  "{{ mt_pass }}"
+    state:     absent
+    parameter: ovpn-client
+    settings:
+      name: ansible_test2
+  register: ovpn_client_test_2_rem
+  failed_when: (
+      not ansible_check_mode
+    ) and (
+      not ( ovpn_client_test_2_rem | changed )
+    )

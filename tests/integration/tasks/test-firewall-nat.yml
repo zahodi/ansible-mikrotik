@@ -1,0 +1,170 @@
+---
+- name: Test adding firewall nat rules
+  mt_ip_firewall:
+    hostname:   "{{ mt_hostname }}"
+    username:   "{{ mt_user }}"
+    password:   "{{ mt_pass }}"
+    state:      "present"
+    parameter: nat
+    rule: "{{ item }}"
+  with_items:
+    - action: accept
+      chain: srcnat
+      comment: 'Ansible - fw filter rule1'
+      place-before: '0'
+    - action: accept
+      chain: dstnat
+      comment: 'Ansible - fw filter rule2'
+      place-before: '1'
+    - action: passthrough
+      chain: srcnat
+      comment: 'Ansible - fw filter rule3'
+      place-before: '2'
+    - action: return
+      chain: dstnat
+      comment: 'Ansible - fw filter rule4'
+      place-before: '3'
+      src-address: 192.168.0.0/16
+    - action: redirect
+      chain: dstnat
+      comment: 'Ansible - fw filter rule5'
+      place-before: '4'
+    - action: redirect
+      chain: dstnat
+      comment: 'Ansible - fw filter rule20'
+      place-before: '19'
+
+- name: add some manual rules to simulate chaos, command module
+  mt_command:
+    hostname: "{{ mt_hostname }}"
+    username: "{{ mt_user }}"
+    password: "{{ mt_pass }}"
+    command:  /ip/firewall/nat/add
+    command_arguments: "{{ item }}"
+  with_items:
+    - action: passthrough
+      chain: srcnat
+      comment: 'manual test rules'
+      place-before: '3'
+    - action: passthrough
+      chain: srcnat
+      comment: 'manual test rules'
+      place-before: '1'
+    - action: passthrough
+      chain: srcnat
+      comment: 'manual test rules'
+      place-before: '0'
+
+- name: fix nat state
+  mt_ip_firewall:
+    hostname:   "{{ mt_hostname }}"
+    username:   "{{ mt_user }}"
+    password:   "{{ mt_pass }}"
+    state:      "present"
+    parameter: nat
+    rule: "{{ item }}"
+  with_items:
+    - action: accept
+      chain: srcnat
+      comment: 'Ansible - fw filter rule1'
+      place-before: '0'
+    - action: accept
+      chain: dstnat
+      comment: 'Ansible - fw filter rule2'
+      place-before: '1'
+    - action: passthrough
+      chain: srcnat
+      comment: 'Ansible - fw filter rule3'
+      place-before: '2'
+    - action: return
+      chain: dstnat
+      comment: 'Ansible - fw filter rule4'
+      place-before: '3'
+      src-address: 192.168.0.0/16
+    - action: redirect
+      chain: dstnat
+      comment: 'Ansible - fw filter rule5'
+      place-before: '4'
+    - action: redirect
+      chain: dstnat
+      comment: 'Ansible - fw filter rule20'
+      place-before: '19'
+
+- name: NEVER_CHANGES check_idempotency
+  mt_ip_firewall:
+    hostname:   "{{ mt_hostname }}"
+    username:   "{{ mt_user }}"
+    password:   "{{ mt_pass }}"
+    state:      "present"
+    parameter: nat
+    rule: "{{ item }}"
+  with_items:
+    - action: accept
+      chain: srcnat
+      comment: 'Ansible - fw filter rule1'
+      place-before: '0'
+    - action: accept
+      chain: dstnat
+      comment: 'Ansible - fw filter rule2'
+      place-before: '1'
+    - action: passthrough
+      chain: srcnat
+      comment: 'Ansible - fw filter rule3'
+      place-before: '2'
+    - action: return
+      chain: dstnat
+      comment: 'Ansible - fw filter rule4'
+      place-before: '3'
+      src-address: 192.168.0.0/16
+    - action: redirect
+      chain: dstnat
+      comment: 'Ansible - fw filter rule5'
+      place-before: '4'
+    - action: redirect
+      chain: dstnat
+      comment: 'Ansible - fw filter rule20'
+      place-before: '19'
+  register: nat_idem
+  failed_when: (
+      not ansible_check_mode
+    ) and (
+      ( nat_idem | changed )
+    )
+
+- name: ALWAYS_CHANGES, change rule
+  mt_ip_firewall:
+    hostname:   "{{ mt_hostname }}"
+    username:   "{{ mt_user }}"
+    password:   "{{ mt_pass }}"
+    state:      "present"
+    parameter: nat
+    rule: "{{ item }}"
+  with_items:
+    - action: return
+      chain: dstnat
+      comment: 'Ansible - fw filter rule4'
+      place-before: '3'
+      src-address: 192.165.0.0/16
+  register: nat_change
+  failed_when: (
+      not ansible_check_mode
+    ) and (
+      not ( nat_change | changed )
+    )
+
+- name: ALWAYS_CHANGES, remove rule
+  mt_ip_firewall:
+    hostname:   "{{ mt_hostname }}"
+    username:   "{{ mt_user }}"
+    password:   "{{ mt_pass }}"
+    state:      "absent"
+    parameter: nat
+    rule: "{{ item }}"
+  with_items:
+    - place-before: '4'
+  register: nat_rem
+  failed_when: (
+      not ansible_check_mode
+    ) and (
+      not ( nat_rem | changed )
+    )

@@ -1,0 +1,41 @@
+---
+- name: Test enabling ftp service
+  mt_ip:
+    hostname: "{{ mt_hostname }}"
+    username: "{{ mt_user }}"
+    password: "{{ mt_pass }}"
+    parameter: service
+    settings:
+      disabled: "no"
+      name:     ftp
+      address:  192.168.50.1/32
+
+- name: Test disabling services
+  mt_ip:
+    hostname: "{{ mt_hostname }}"
+    username: "{{ mt_user }}"
+    password: "{{ mt_pass }}"
+    parameter: service
+    settings:
+      disabled: "yes"
+      name: "{{ item }}"
+  with_items:
+    - ftp
+    - telnet
+    - api-ssl
+
+- name: ALWAYS_CHANGES Test re-enabling telnet service
+  mt_ip:
+    hostname: "{{ mt_hostname }}"
+    username: "{{ mt_user }}"
+    password: "{{ mt_pass }}"
+    parameter: service
+    settings:
+      disabled: "no"
+      name:     telnet
+  register: enable_telnet
+  failed_when: (
+      not ansible_check_mode
+    ) and (
+      not ( enable_telnet | changed )
+    )
