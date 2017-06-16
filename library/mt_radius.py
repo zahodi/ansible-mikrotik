@@ -31,7 +31,7 @@ options:
 
 EXAMPLES = '''
 # Add a new radius entry
-- mt_dhcp_server:
+- mt_radius:
     hostname:    "{{ inventory_hostname }}"
     username:    "{{ mt_user }}"
     password:    "{{ mt_pass }}"
