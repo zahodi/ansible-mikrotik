@@ -1,0 +1,52 @@
+---
+################################################################
+# TEMPORARY TASK TO STORE THE ROLLBACK PROCEDURE
+#######################################################################
+
+###################################################################
+# create a backup and add a scheduler to rollback if we lose connection
+# to the a mikrotik device during the ansible run.
+# Place this in the begging of your playbook
+#####################################################################
+- name: run command module to create a backup
+  mt_command:
+    hostname: "{{ mt_hostname }}"
+    username: "{{ mt_user }}"
+    password: "{{ mt_pass }}"
+    command: /system/backup/save
+    command_arguments:
+      name: pre_deploy
+      password: 123
+- name: add rollback scheduler task
+  mt_system_scheduler:
+    hostname: "{{ mt_hostname }}"
+    username: "{{ mt_user }}"
+    password: "{{ mt_pass }}"
+    state:    present
+    name:     rollback
+    on_event: /system backup load name=pre_deploy.backup password=123
+    interval: 30m
+    policy:
+      - password
+      - reboot
+      - write
+      - sensitive
+      - test
+      - read
+      - policy
+
+###################################################################
+# Place this in the end of your mikrotik playbook this will remove the
+# rollback scheduler task if the playbook runs succesfully
+#####################################################################
+- name: remove rollback scheduler task if run succesfull
+  hosts: govsat
+  gather_facts: no
+  connection: local
+  tasks:
+    - mt_system_scheduler:
+        hostname: "{{ mt_hostname }}"
+        username: "{{ mt_user }}"
+        password: "{{ mt_pass }}"
+        state:    absent
+        name:     rollback
