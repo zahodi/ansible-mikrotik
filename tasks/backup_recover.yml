@@ -1,6 +1,6 @@
 ---
 ################################################################
-# TEMPORARY TASK TO STORE THE ROLLBACK PROCEDURE
+# TEMPORARY PLAYBOOK TO STORE THE ROLLBACK PROCEDURE
 #######################################################################
 
 ###################################################################
@@ -17,6 +17,7 @@
     command_arguments:
       name: pre_deploy
       password: 123
+
 - name: add rollback scheduler task
   mt_system_scheduler:
     hostname: "{{ mt_hostname }}"
@@ -37,7 +38,7 @@
 
 ###################################################################
 # Place this in the end of your mikrotik playbook this will remove the
-# rollback scheduler task if the playbook runs succesfully
+# rollback scheduler task if the playbook runs successfully
 #####################################################################
 - name: remove rollback scheduler task if run succesfull
   hosts: govsat
