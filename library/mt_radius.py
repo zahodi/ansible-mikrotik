@@ -49,7 +49,7 @@ EXAMPLES = '''
 '''
 
 from ansible.module_utils.basic import AnsibleModule
-from mt_common import MikrotikIdempotent
+from ansible.module_utils.mt_common import MikrotikIdempotent
 
 
 def main():

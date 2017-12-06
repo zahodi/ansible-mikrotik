@@ -89,7 +89,7 @@ EXAMPLES = '''
     timeout:        '2s500ms'
 '''
 
-import mt_api
+from ansible.module_utils import mt_api
 from ansible.module_utils.basic import AnsibleModule
 
 

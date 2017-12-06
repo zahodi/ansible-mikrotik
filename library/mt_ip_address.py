@@ -49,7 +49,7 @@ EXAMPLES = '''
     comment:    "link 3"
 '''
 
-import mt_api
+from ansible.module_utils import mt_api
 import socket
 
 #import mt_action #TODO: get this working

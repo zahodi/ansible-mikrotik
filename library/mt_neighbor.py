@@ -49,7 +49,7 @@ EXAMPLES = '''
       discover: "yes"
 '''
 
-from mt_common import clean_params, MikrotikIdempotent
+from ansible.module_utils.mt_common import clean_params, MikrotikIdempotent
 from ansible.module_utils.basic import AnsibleModule
 
 

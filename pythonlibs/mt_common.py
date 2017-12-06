@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-import mt_api
+from ansible.module_utils import mt_api
 import re
 import sys
 

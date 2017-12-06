@@ -47,7 +47,7 @@ EXAMPLES = '''
       - 19.134.52.23/23
 '''
 
-import mt_api
+from ansible.module_utils import mt_api
 from ansible.module_utils.basic import AnsibleModule
 
 
