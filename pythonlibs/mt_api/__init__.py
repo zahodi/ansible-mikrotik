@@ -7,9 +7,9 @@ import socket
 import ssl
 import sys
 
-from .retryloop import RetryError
-from .retryloop import retryloop
-from .socket_utils import set_keepalive
+from ansible.module_utils.mt_api.retryloop import RetryError
+from ansible.module_utils.mt_api.retryloop import retryloop
+from ansible.module_utils.mt_api.socket_utils import set_keepalive
 
 PY2 = sys.version_info[0] < 3
 logger = logging.getLogger(__name__)

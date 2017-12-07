@@ -55,7 +55,7 @@ EXAMPLES = '''
     password:  "{{ mt_pass }}"
     state:     present
     parameter: filter
-    settings:
+    rule:
       action: accept
       chain: forward
       comment: controlled by ansible
@@ -63,7 +63,7 @@ EXAMPLES = '''
 '''
 
 from ansible.module_utils.basic import AnsibleModule
-import mt_api
+from ansible.module_utils import mt_api
 import re
 from copy import copy
 
