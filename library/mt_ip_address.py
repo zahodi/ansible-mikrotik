@@ -3,38 +3,34 @@ module: mt_ip_address
 author:
   - "Valentin Gurmeza"
   - "Shaun Smiley"
+  - "Antoni Matamalas"
 version_added: "2.3"
 short_description: Manage mikrotik /ip/addresses
 requirements:
-  - rosapi
+  - mt_api
 description:
-  - FILL ME OUT
+  - Manage addresses on interfaces
 options:
   hostname:
     description:
-      -
+      - hotstname of mikrotik router
+    required: True
   username:
     description:
-      -
+      - username used to connect to mikrotik router
+    required: True
   password:
     description:
-      -
-  interface:
+      - password used for authentication to mikrotik router
+    required: True
+  settings:
     description:
-      -
-  address:
-    description:
-      -
-  network:
-    description:
-      -
+      - All Mikrotik compatible parameters for this particular endpoint.
+        Any yes/no values must be enclosed in double quotes
+    required: True
   state:
     description:
-      -
-  force:
-    description:
-      - True/False value to force removing the address on an interface
-        even if the address does not match.
+      - absent or present
 '''
 
 EXAMPLES = '''
@@ -42,18 +38,15 @@ EXAMPLES = '''
     hostname:   "{{ inventory_hostname }}"
     username:   "{{ mt_user }}"
     password:   "{{ mt_pass }}"
-    interface:  "ether2"
-    address:    "192.168.88.2/24"
-    network:    "192.168.88.0/24"
-    state:      "present"
-    comment:    "link 3"
+    settings:
+      interface:  "ether2"
+      address:    "192.168.88.2/24"
+      network:    "192.168.88.0/24"
+      state:      "present"
+      comment:    "link 3"
 '''
 
-from ansible.module_utils import mt_api
-import socket
-
-#import mt_action #TODO: get this working
-
+from ansible.module_utils.mt_common import clean_params, MikrotikIdempotent
 from ansible.module_utils.basic import AnsibleModule
 
 
@@ -64,120 +57,62 @@ def main():
           hostname  = dict(required=True),
           username  = dict(required=True),
           password  = dict(required=True, no_log=True),
-          interface = dict(required=True,  type='str'),
-          address   = dict(required=True,  type='str', aliases=['ip', 'addr', 'ip_address']),
-          network   = dict(required=False, type='str', default=""),
-          comment   = dict(required=False, type='str', default=""),
+          settings  = dict(required=False, type='dict'),
           state = dict(
               required  = False,
               default   = "present",
               choices   = ['present', 'absent'],
               type      = 'str'
           ),
-      )
+      ),
+      supports_check_mode=True
   )
 
-  hostname    = module.params['hostname']
-  username    = module.params['username']
-  password    = module.params['password']
-  ip_address  = module.params['address']
-  interface   = module.params['interface']
-  network     = module.params['network']
-  ip_state    = module.params['state']
-  comment     = module.params['comment']
-  changed = False
-  msg = ""
+  idempotent_parameter = None
+  params = module.params
+  idempotent_parameter = 'interface'
+  mt_obj = MikrotikIdempotent(
+    hostname         = params['hostname'],
+    username         = params['username'],
+    password         = params['password'],
+    state            = params['state'],
+    desired_params   = params['settings'],
+    idempotent_param = idempotent_parameter,
+    api_path         = '/ip/address',
+    check_mode       = module.check_mode
+  )
 
-  interface_path = '/interface'
-  address_path = '/ip/address'
-  address_print_params = {
-    ".proplist": "interface,address,.id,network,netmask,comment"
-  }
-  interface_print_params = {
-    ".proplist": "name,.id,type"
-  }
-  mk = mt_api.Mikrotik(hostname,username,password)
-  try:
-    mk.login()
-    interfaces = mk.api_print(interface_path, interface_print_params)
-  except:
+  # exit if login failed
+  if not mt_obj.login_success:
     module.fail_json(
-        msg="Could not log into Mikrotik device." +
-        " Check the username and password.",
+      msg = mt_obj.failed_msg
     )
 
-  ###################################
-  # Check if interface is present
-  # exit if interface is not present
-  ###################################
-  interfacelist = []
-  exitmessage = []
-  for i in range(0, len(interfaces) - 1):
-    interfacelist.append(interfaces[i][1]["name"])
-  intExists = False
+  # add, remove or edit things
+  mt_obj.sync_state()
 
-  if (interface in interfacelist):
-    intExists = True
-    # module.exit_json(failed=False, changed=False, msg=interfacelist)
-  if intExists:
-    pass
-    #exitmessage.append("Interface " + interface + " exists.") #this is never used
+  if mt_obj.failed:
+      module.fail_json(
+        msg = mt_obj.failed_msg
+      )
+  elif mt_obj.changed:
+    module.exit_json(
+      failed=False,
+      changed=True,
+      msg=mt_obj.changed_msg,
+      diff={ "prepared": {
+          "old": mt_obj.old_params,
+          "new": mt_obj.new_params,
+      }},
+    )
   else:
-    exitmessage.append("Interface " + interface + " does not exist.")
-    module.fail_json(failed=True, msg=exitmessage)
-
-  ##############################################
-  # Check if IP address is set on the interface
-  # make no changes if address already set
-  ##############################################
-  ip_addresses = mk.api_print(address_path, address_print_params)
-
-  iplist = []
-  for i in range(0, len(ip_addresses) - 1):
-    iplist.append(ip_addresses[i][1]["address"])
-    if ip_addresses[i][1]["address"] == ip_address:
-      ip_id = ip_addresses[i][1][".id"]
-
-  if ip_state == "present":
-    if ip_address in iplist:
-      module.exit_json(
-          failed=False,
-          #msg="IP Address: " + ip_address +
-          #" is already configured" +
-          #" on interface " + interface,
-      )
-
-    else:
-      add_dict = {
-          'address': ip_address,
-          'interface': interface,
-          'comment': comment
-      }
-      response = mk.api_add(address_path, add_dict)
-      module.exit_json(
-          failed=False,
-          changed=True,
-          #msg="IP address: " + ip_address + " has been configured" +
-          #" on interface " + interface
-      )
-
-  if ip_state == "absent":
-    if ip_address in iplist:
-      response = mk.api_remove(address_path, ip_id)
-      module.exit_json(
-          failed=False,
-          changed=True,
-          #msg="IP Address: " + ip_address +
-          #" has been removed"
-      )
-
-    else:
-      module.exit_json(
-          failed=False,
-          changed=False,
-          #msg="IP Address: " + ip_address +
-          #" is already absent"
-      )
+    module.exit_json(
+      failed=False,
+      changed=False,
+      #msg='',
+      msg=params['settings'],
+    )
 
 if __name__ == '__main__':
   main()
+
