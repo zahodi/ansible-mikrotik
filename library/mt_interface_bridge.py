@@ -111,7 +111,7 @@ def main():
     argument_spec=dict(
       hostname       = dict(required=True),
       username       = dict(required=True),
-      password       = dict(required=True),
+      password       = dict(required=True, no_log=True),
       name           = dict(required=False, type='str'),
       comment        = dict(required=False, type='str'),
       admin_mac      = dict(required=False, type='str'),

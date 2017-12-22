@@ -100,7 +100,7 @@ def main():
     argument_spec=dict(
       hostname    =dict(required=True),
       username    =dict(required=True),
-      password    =dict(required=True),
+      password    =dict(required=True, no_log=True),
       interface   =dict(required=True, type='str'),
       bridge =dict(required=False, type='str'),
       comment     =dict(required=False, type='str'),
