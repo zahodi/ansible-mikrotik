@@ -12,7 +12,7 @@ def main():
     argument_spec=dict(
       hostname=dict(required=True),
       username=dict(required=True),
-      password=dict(required=True),
+      password=dict(required=True, no_log=True),
       )
     )
 

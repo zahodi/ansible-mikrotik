@@ -57,7 +57,7 @@ def main():
     argument_spec=dict(
       hostname  = dict(required=True),
       username  = dict(required=True),
-      password  = dict(required=True),
+      password  = dict(required=True, no_log=True),
       list_name  = dict(required=True, type='str'),
       address_list = dict(required=False, type='list'),
       state = dict(

@@ -63,7 +63,7 @@ def main():
       argument_spec=dict(
           hostname  = dict(required=True),
           username  = dict(required=True),
-          password  = dict(required=True),
+          password  = dict(required=True, no_log=True),
           interface = dict(required=True,  type='str'),
           address   = dict(required=True,  type='str', aliases=['ip', 'addr', 'ip_address']),
           network   = dict(required=False, type='str', default=""),

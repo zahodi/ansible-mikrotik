@@ -74,7 +74,7 @@ def main():
     argument_spec=dict(
       hostname  =dict(required=True),
       username  =dict(required=True),
-      password  =dict(required=True),
+      password  =dict(required=True, no_log=True),
       name      =dict(required=True, type='str'),
       on_event  =dict(required=False, type='str'),
       comment   =dict(required=False, type='str'),
