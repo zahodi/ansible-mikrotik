@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-from ansible.module_utils import mt_api
+from ansible.module_utils import MikrotikConnection
 import re
 import sys
 
@@ -59,9 +59,6 @@ class MikrotikIdempotent():
    self, hostname, username, password, desired_params, api_path,
    state, idempotent_param, check_mode=False):
 
-    self.hostname         = hostname
-    self.username         = username
-    self.password         = password
     self.state            = state
     self.desired_params   = desired_params
     self.idempotent_param = idempotent_param
@@ -75,20 +72,7 @@ class MikrotikIdempotent():
     self.failed           = False
     self.failed_msg       = []
 
-    self.login()
-
-  def login(self):
-    self.mk = mt_api.Mikrotik(
-      self.hostname,
-      self.username,
-      self.password,
-    )
-
-    try:
-      self.mk.login()
-      self.login_success = True
-    except:
-      self.failed_msg = "Could not log into Mikrotik device." + " Check the username and password.",
+    self.mk = MikrotikConnection.login()
 
   def get_current_params(self):
     clean_params(self.desired_params)
