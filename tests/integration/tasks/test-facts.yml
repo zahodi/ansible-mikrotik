@@ -1,0 +1,14 @@
+---
+- name: Get mikrotik system facts
+  mt_facts:
+    hostname: "{{ mt_hostname }}"
+    username: "{{ mt_user }}"
+    password: "{{ mt_pass }}"
+    filter: "{{ item }}"
+  with_items:
+    - interface_ethernet
+    - system_ntp_client
+    - system_routerboard
+    - ip_route
+    - ip_dns
+    - ip_address
