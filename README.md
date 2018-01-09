@@ -32,9 +32,11 @@ it as a Vagrant .box file, and register the .box with Vagrant.
 Then, you need only run `vagrant up` in the repository root to start the CHR.
 
 To use pipenv ensure pipenv is installed:
+
 `pip install pipenv`
 
 Then enable virtualenv and install dependencies:
+
 `pipenv shell`
 `pipenv install`
 
