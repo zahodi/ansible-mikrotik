@@ -154,3 +154,6 @@
     ###################
     - include: tasks/test-interface-wireless.yml
       tags: interface-wireless
+
+    - include: tasks/test-facts.yml
+      tags: get-facts
