@@ -30,6 +30,7 @@ options:
     options:
       - ethernet
       - vlan
+      - ovpn-client
   settings:
     description:
       - All Mikrotik compatible parameters for this particular endpoint.

@@ -18,19 +18,22 @@
     username: "{{ mt_user }}"
     password: "{{ mt_pass }}"
     state:    present
-    name:     ansible_test
-    on_event: 'put "test"'
-    interval: 5s
-    policy:
-      - password
-      - sniff
-      - write
+    parameter: scheduler
+    settings:
+      name:     ansible_test
+      on_event: 'put "test"'
+      interval: 5s
+      policy:
+        - password
+        - sniff
+        - write
   register: scheduler_mod
   failed_when: (
       not ansible_check_mode
     ) and (
       not ( scheduler_mod | changed )
     )
+  tags: test1
 
 - name: NEVER_CHANGES add duplicate scheduler
   mt_system_scheduler:
@@ -38,19 +41,22 @@
     username: "{{ mt_user }}"
     password: "{{ mt_pass }}"
     state:    present
-    name:     ansible_test
-    on_event: 'put "test"'
-    interval: 5s
-    policy:
-      - password
-      - sniff
-      - write
+    parameter: scheduler
+    settings:
+      name:     ansible_test
+      on_event: 'put "test"'
+      interval: 5s
+      policy:
+        - password
+        - sniff
+        - write
   register: scheduler_dup
   failed_when: (
       not ansible_check_mode
     ) and (
       ( scheduler_dup | changed )
     )
+  tags: test1
 
 - name: ALWAYS_CHANGES remove duplicate scheduler
   mt_system_scheduler:
@@ -58,10 +64,13 @@
     username: "{{ mt_user }}"
     password: "{{ mt_pass }}"
     state:    absent
-    name:     ansible_test
+    parameter: scheduler
+    settings:
+      name:     ansible_test
   register: scheduler_rem
   failed_when: (
       not ansible_check_mode
     ) and (
       not ( scheduler_rem | changed )
     )
+  tags: test1

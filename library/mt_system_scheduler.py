@@ -22,35 +22,21 @@ options:
     description:
       - password used for authentication to mikrotik router
     required: True
+  parameter:
+    description:
+      - sub endpoint for mikrotik system
+    required: True
+    options:
+      - scheduler
+  settings:
+    description:
+      - All Mikrotik compatible parameters for this particular endpoint.
+        Any yes/no values must be enclosed in double quotes
+    required: True
   state:
     description:
-      - scheduler task present or absent
+      - absent or present
     required: True
-    choices:
-      - present
-      - absent
-  comment:
-    description:
-      - task comment
-  interval:
-    description:
-      - interval between two script executions, if time interval is set to zero, the script is only executed at its start time, otherwise it is executed repeatedly at the time interval is specified
-  name:
-    description:
-      -  name of the task
-    required: True
-  on_event:
-    description:
-      - name of the script to execute.
-  start_date:
-    description:
-      - date of the first script execution
-  start_time:
-    description:
-      - time of the first script execution
-  policy:
-    description:
-      - policy
 '''
 
 EXAMPLES = '''
@@ -59,9 +45,10 @@ EXAMPLES = '''
     username:      "{{ mt_user }}"
     password:      "{{ mt_pass }}"
     state:         present
-    name:          test_by_ansible
-    comment:       ansible_test
-    on_event:      put "hello"
+    parameter:     scheduler
+      name:          test_by_ansible
+      comment:       ansible_test
+      on_event:      put "hello"
 '''
 
 from ansible.module_utils.mt_common import clean_params, MikrotikIdempotent
@@ -81,7 +68,7 @@ def main():
           type      = 'str'
       ),
       state   = dict(
-          required  = False,
+          required  = True,
           choices   = ['present', 'absent'],
           type      = 'str'
       )
