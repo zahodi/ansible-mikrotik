@@ -5,9 +5,12 @@
     username: "{{ mt_user }}"
     password: "{{ mt_pass }}"
     state:    present
-    name:     ansible_test
-    on_event: 'put "test"'
-    interval: 1s
+    parameter: scheduler
+    settings:
+      name:     ansible_test
+      on_event: 'put "test"'
+      interval: 1s
+  tags: test1
 
 - name: ALWAYS_CHANGES modify existing scheduler
   mt_system_scheduler:
