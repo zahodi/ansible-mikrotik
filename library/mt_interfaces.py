@@ -9,7 +9,7 @@ short_description: Manage mikrotik interfaces
 requirements:
   - mt_api
 description:
-  - manage settings on interfaces
+  - manage interfaces and settings
 options:
   hostname:
     description:
@@ -30,6 +30,9 @@ options:
     options:
       - ethernet
       - vlan
+      - bridge
+      - bridge port
+      - bridge settings
   settings:
     description:
       - All Mikrotik compatible parameters for this particular endpoint.
@@ -38,6 +41,7 @@ options:
   state:
     description:
       - absent or present
+    required: Flase
 '''
 
 EXAMPLES = '''
