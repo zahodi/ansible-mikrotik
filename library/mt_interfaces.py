@@ -64,12 +64,19 @@ def main():
       username=dict(required=True),
       password=dict(required=True, no_log=True),
       settings=dict(required=True, type='dict'),
-      parameter = dict(
-          required  = True,
-          choices   = ['ethernet', 'vlan', 'ovpn-client'],
-          type      = 'str'
+      parameter=dict(
+          required=True,
+          choices=[
+            'ethernet',
+            'vlan',
+            'ovpn-client',
+            'bridge',
+            'bridge port',
+            'bridge settings'
+          ],
+          type='str'
       ),
-      state   = dict(
+      state=dict(
           required  = False,
           choices   = ['present', 'absent'],
           type      = 'str'
@@ -79,7 +86,14 @@ def main():
   )
 
   params = module.params
-  idempotent_parameter = 'name'
+  if params['parameter'] == 'bridge port':
+    params['parameter'] = 'bridge/port'
+    idempotent_parameter = "interface"
+  elif params['parameter'] == 'bridge settings':
+    params['parameter'] = 'bridge/settings'
+    idempotent_parameter = None
+  else:
+    idempotent_parameter = 'name'
 
   mt_obj = MikrotikIdempotent(
     hostname         = params['hostname'],
