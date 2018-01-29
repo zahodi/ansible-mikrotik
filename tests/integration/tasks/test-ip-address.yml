@@ -1,4 +1,21 @@
 ---
+
+- name: generate bridge interfaces for testing ip addresses
+  mt_interfaces:
+    hostname: "{{ mt_hostname }}"
+    username: "{{ mt_user }}"
+    password: "{{ mt_pass }}"
+    state:    present
+    parameter: bridge
+    settings:
+      name:     "{{ item }}"
+      arp:      proxy-arp
+  with_items:
+    - "bridge1"
+    - "bridge2"
+    - "bridge3"
+    - "bridge4"
+
 - name: ALWAYS_CHANGES Test adding an ip addr ether2
   mt_ip_address:
     hostname:   "{{ mt_hostname }}"
@@ -11,26 +28,26 @@
   register: ip_addr_add_2
   failed_when: not ( ip_addr_add_2 | changed )
 
-- name: Test adding an ip addr with comment ether3
+- name: Test adding an ip addr with comment bridge2
   mt_ip_address:
     hostname:   "{{ mt_hostname }}"
     username:   "{{ mt_user }}"
     password:   "{{ mt_pass }}"
     state:      "present"
-    interface:  "ether3"
+    interface:  "bridge2"
     address:    "192.168.88.3/24"
-    comment:    "interface #3!!!"
+    comment:    "bridge #2!!!"
 
-- name: Test adding an ip addr with comment and network ether4
+- name: Test adding an ip addr with comment and network bridge3
   mt_ip_address:
     hostname:   "{{ mt_hostname }}"
     username:   "{{ mt_user }}"
     password:   "{{ mt_pass }}"
     state:      "present"
-    interface:  "ether4"
+    interface:  "bridge3"
     address:    "192.168.88.4/24"
     network:    "192.168.88.0"
-    comment:    "interface #4!!!"
+    comment:    "bridge #3!!!"
 
 - name: ALWAYS_CHANGES Test removing ip addr ether2
   mt_ip_address:

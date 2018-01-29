@@ -1,4 +1,14 @@
 ---
+- name: add eoip interface
+  mt_command:
+    hostname: "{{ mt_hostname }}"
+    username: "{{ mt_user }}"
+    password: "{{ mt_pass }}"
+    command: /interface/eoip/add
+    command_arguments:
+      name: eoip-interface1
+  ignore_errors: yes
+
 - name: Add bridge1
   mt_interfaces:
     hostname: "{{ mt_hostname }}"
@@ -45,7 +55,7 @@
       interface:  "{{ item[1] }}"
   with_nested:
     - [ "bridge1" ]
-    - [ "ether8" ]
+    - [ "ether2" ]
 
 - name: Add interface to bridge1 (port) again (idempotency test)
   mt_interfaces:
@@ -59,7 +69,7 @@
       interface:  "{{ item[1] }}"
   with_nested:
     - [ "bridge1" ]
-    - [ "ether8" ]
+    - [ "ether2" ]
   register: mod_bridge1_port
   failed_when: (
       not ansible_check_mode
@@ -80,7 +90,7 @@
       edge:       "{{ item[2] }}"
   with_nested:
     - [ "bridge1" ]
-    - [ "ether8" ]
+    - [ "ether2" ]
     - [ "yes-discover" ]
 
 - name: ALWAYS_CHANGES Add 2nd interface to bridge1 port
@@ -91,11 +101,8 @@
     parameter:  "bridge port"
     state:      present
     settings:
-      bridge:     bridge1
-      interface: ether7
-  with_nested:
-    - [ "bridge1" ]
-    - [ "ether7" ]
+      bridge:    bridge1
+      interface: eoip-tunnel1
   register: bridge1_add_2nd_inter
   failed_when: (
       not ansible_check_mode
@@ -112,10 +119,7 @@
     state:      absent
     settings:
       bridge:     bridge1
-      interface:  ether7
-  with_nested:
-    - [ "bridge1" ]
-    - [ "ether7" ]
+      interface:  "eoip-tunnel1"
   register: bridge1_rem_2nd_inter
   failed_when: (
       not ansible_check_mode
