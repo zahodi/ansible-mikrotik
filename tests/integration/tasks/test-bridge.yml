@@ -1,23 +1,37 @@
 ---
-- name: Add bridge1
-  mt_interface_bridge:
+- name: add eoip interface
+  mt_command:
     hostname: "{{ mt_hostname }}"
     username: "{{ mt_user }}"
     password: "{{ mt_pass }}"
-    name:     "{{ item }}"
+    command: /interface/eoip/add
+    command_arguments:
+      name: eoip-interface1
+  ignore_errors: yes
+
+- name: Add bridge1
+  mt_interfaces:
+    hostname: "{{ mt_hostname }}"
+    username: "{{ mt_user }}"
+    password: "{{ mt_pass }}"
     state:    present
-    arp:      proxy-arp
+    parameter: bridge
+    settings:
+      name:     "{{ item }}"
+      arp:      proxy-arp
   with_items:
     - "bridge1"
 
 - name: Add bridge1 again (idempotency test)
-  mt_interface_bridge:
+  mt_interfaces:
     hostname: "{{ mt_hostname }}"
     username: "{{ mt_user }}"
     password: "{{ mt_pass }}"
-    name:     "{{ item }}"
     state:    present
-    arp:      proxy-arp
+    parameter: bridge
+    settings:
+      name:     "{{ item }}"
+      arp:      proxy-arp
   with_items:
     - "bridge1"
   register: mod_bridge1
@@ -30,28 +44,32 @@
 # bridge ports depend on bridge being created first
 
 - name: Add interface to bridge1 (port)
-  mt_interface_bridge_port:
+  mt_interfaces:
     hostname:   "{{ mt_hostname }}"
     username:   "{{ mt_user }}"
     password:   "{{ mt_pass }}"
-    bridge:     "{{ item[0] }}"
-    interface:  "{{ item[1] }}"
+    parameter:  "bridge port"
     state:      present
+    settings:
+      bridge:     "{{ item[0] }}"
+      interface:  "{{ item[1] }}"
   with_nested:
     - [ "bridge1" ]
-    - [ "ether8" ]
+    - [ "ether2" ]
 
 - name: Add interface to bridge1 (port) again (idempotency test)
-  mt_interface_bridge_port:
+  mt_interfaces:
     hostname:   "{{ mt_hostname }}"
     username:   "{{ mt_user }}"
     password:   "{{ mt_pass }}"
-    bridge:     "{{ item[0] }}"
-    interface:  "{{ item[1] }}"
+    parameter:  "bridge port"
     state:      present
+    settings:
+      bridge:     "{{ item[0] }}"
+      interface:  "{{ item[1] }}"
   with_nested:
     - [ "bridge1" ]
-    - [ "ether8" ]
+    - [ "ether2" ]
   register: mod_bridge1_port
   failed_when: (
       not ansible_check_mode
@@ -60,30 +78,31 @@
     )
 
 - name: Add additional param to bridge port
-  mt_interface_bridge_port:
+  mt_interfaces:
     hostname:   "{{ mt_hostname }}"
     username:   "{{ mt_user }}"
     password:   "{{ mt_pass }}"
-    bridge:     "{{ item[0] }}"
-    interface:  "{{ item[1] }}"
-    edge:       "{{ item[2] }}"
+    parameter:  "bridge port"
     state:      present
+    settings:
+      bridge:     "{{ item[0] }}"
+      interface:  "{{ item[1] }}"
+      edge:       "{{ item[2] }}"
   with_nested:
     - [ "bridge1" ]
-    - [ "ether8" ]
+    - [ "ether2" ]
     - [ "yes-discover" ]
 
 - name: ALWAYS_CHANGES Add 2nd interface to bridge1 port
-  mt_interface_bridge_port:
+  mt_interfaces:
     hostname: "{{ mt_hostname }}"
     username: "{{ mt_user }}"
     password: "{{ mt_pass }}"
-    bridge:     bridge1
-    interface: ether7
-    state:    present
-  with_nested:
-    - [ "bridge1" ]
-    - [ "ether7" ]
+    parameter:  "bridge port"
+    state:      present
+    settings:
+      bridge:    bridge1
+      interface: eoip-tunnel1
   register: bridge1_add_2nd_inter
   failed_when: (
       not ansible_check_mode
@@ -92,16 +111,15 @@
     )
 
 - name: ALWAYS_CHANGES Remove 2nd interface to bridge1 port
-  mt_interface_bridge_port:
+  mt_interfaces:
     hostname: "{{ mt_hostname }}"
     username: "{{ mt_user }}"
     password: "{{ mt_pass }}"
-    bridge:     bridge1
-    interface:  ether7
+    parameter:  "bridge port"
     state:      absent
-  with_nested:
-    - [ "bridge1" ]
-    - [ "ether7" ]
+    settings:
+      bridge:     bridge1
+      interface:  "eoip-tunnel1"
   register: bridge1_rem_2nd_inter
   failed_when: (
       not ansible_check_mode
@@ -110,39 +128,38 @@
     )
 
 - name: Add bridge2
-  mt_interface_bridge:
+  mt_interfaces:
     hostname: "{{ mt_hostname }}"
     username: "{{ mt_user }}"
     password: "{{ mt_pass }}"
-    state:    present
-    name:     "{{ item.key }}"
-    arp:      "{{ item.value.arp }}"
-  with_dict:
-    bridge2:
-      arp: "reply-only"
-
+    parameter:  "bridge"
+    state:      present
+    settings:
+      name:     "bridge2"
+      arp:      "reply-only"
 
 - name: Adjust settings
-  mt_interface_bridge:
+  mt_interfaces:
     hostname: "{{ mt_hostname }}"
     username: "{{ mt_user }}"
     password: "{{ mt_pass }}"
-    #state:    present
+    parameter:  "bridge settings"
     settings:
-      allow-fast-path: yes
-      use-ip-firewall-for-vlan: yes
-      use-ip-firewall-for-pppoe: no
+      allow-fast-path: "yes"
+      use-ip-firewall: "yes"
+      use-ip-firewall-for-vlan: "yes"
+      use-ip-firewall-for-pppoe: "no"
 
 - name: Adjust settings (test changes)
-  mt_interface_bridge:
+  mt_interfaces:
     hostname: "{{ mt_hostname }}"
     username: "{{ mt_user }}"
     password: "{{ mt_pass }}"
-    #state:    present
+    parameter:  "bridge settings"
     settings:
-      allow-fast-path: yes
-      use-ip-firewall-for-vlan: no
-      use-ip-firewall-for-pppoe: no
+      allow-fast-path: "yes"
+      use-ip-firewall-for-vlan: "no"
+      use-ip-firewall-for-pppoe: "no"
   register: bridge_settings_1
   failed_when: (
       not ansible_check_mode
@@ -151,15 +168,15 @@
     )
 
 - name: Adjust settings again (idempotency test)
-  mt_interface_bridge:
+  mt_interfaces:
     hostname: "{{ mt_hostname }}"
     username: "{{ mt_user }}"
     password: "{{ mt_pass }}"
-    #state:    present
+    parameter:  "bridge settings"
     settings:
-      allow-fast-path: yes
-      use-ip-firewall-for-vlan: no
-      use-ip-firewall-for-pppoe: no
+      allow-fast-path: "yes"
+      use-ip-firewall-for-vlan: "no"
+      use-ip-firewall-for-pppoe: "no"
   register: bridge_settings_2
   failed_when: (
       not ansible_check_mode
