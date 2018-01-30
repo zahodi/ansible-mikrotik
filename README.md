@@ -28,7 +28,7 @@ API service is enabled.
 
 AWS EC2
 -------
-You can use an ec2 CHR image for testing. Keep in mind that as of right now we can only set up two interfaces on the most ec2 instances.
+You can use an ec2 CHR image for testing. Keep in mind that as of right now we can only set up two interfaces on most ec2 instances.
 https://aws.amazon.com/marketplace/pp/B01E00PU50?qid=1517274040207&sr=0-1&ref_=srh_res_product_title
 
 Vagrant
