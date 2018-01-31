@@ -9,7 +9,7 @@
     settings:
       name:     vlan_test1
       vlan_id:  30
-      interface: ether3
+      interface: ether1
       comment:   Testing vlan1
 
 - name: NEVER_CHANGES Test adding duplicate vlan interface
@@ -22,7 +22,7 @@
     settings:
       name:     vlan_test1
       vlan_id:  30
-      interface: ether3
+      interface: ether1
   register: vlan_test_1_add
   failed_when: (
       not ansible_check_mode
@@ -40,7 +40,7 @@
     settings:
       name:     vlan_test2
       vlan_id:  32
-      interface: ether4
+      interface: ether2
   register: vlan_test_2_add
   failed_when: (
       not ansible_check_mode
@@ -58,7 +58,7 @@
     settings:
       name:     vlan_test1
       vlan_id:  36
-      interface: ether3
+      interface: ether1
       comment:    "testing ansible stuff"
   register: vlan_test_1_edit
   failed_when: (

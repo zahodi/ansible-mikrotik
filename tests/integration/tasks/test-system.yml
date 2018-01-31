@@ -8,6 +8,15 @@
     settings:
       name: Test_mikrotik
 
+- name: check if physical hardware
+  mt_command:
+    hostname: "{{ mt_hostname }}"
+    username: "{{ mt_user }}"
+    password: "{{ mt_pass }}"
+    command: /system/routerboard/print
+  register: routerboard
+  tags: routerboard
+
 - name: set routerboard settings on physical device
   mt_system:
     hostname: "{{ mt_hostname }}"
@@ -15,10 +24,9 @@
     password: "{{ mt_pass }}"
     parameter: routerboard_settings
     settings:
-      #protected-routerboot: disabled
+      protected-routerboot: disabled
       boot-protocol: dhcp
-  when: '"127.0.0.1" not in mt_hostname'
-  tags: routerboard_settings
+  when: routerboard['msg'][0][0][1]['routerboard'] != "false"
 
 - name: set clock
   mt_system:
