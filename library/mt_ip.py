@@ -28,6 +28,7 @@ options:
       - sub endpoint for mikrotik snmp
     required: True
     options:
+      - address-list
       - netwatch
       - e-mail
   settings:
