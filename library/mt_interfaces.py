@@ -59,6 +59,7 @@ EXAMPLES = '''
 
 from ansible.module_utils.mt_common import clean_params, MikrotikIdempotent
 from ansible.module_utils.basic import AnsibleModule
+from mt_utils import get_connection
 
 
 def main():
@@ -107,14 +108,15 @@ def main():
     desired_params   = params['settings'],
     idempotent_param = idempotent_parameter,
     api_path         = '/interface/' + str(params['parameter']),
-    check_mode       = module.check_mode
+    conn             = get_connection(module),
+    check_mode       = module.check_mode,
   )
 
   # exit if login failed
-  if not mt_obj.login_success:
-    module.fail_json(
-      msg = mt_obj.failed_msg
-    )
+  #if not mt_obj.login_success:
+  #  module.fail_json(
+  #    msg = mt_obj.failed_msg
+  #  )
 
   # add, remove or edit things
   mt_obj.sync_state()

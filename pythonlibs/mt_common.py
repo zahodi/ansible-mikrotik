@@ -1,7 +1,9 @@
 #!/usr/bin/env python
 from ansible.module_utils import MikrotikConnection
 import re
-import sys
+from mt_utils import get_connection
+
+# import sys
 
 
 def list_to_string(list):
@@ -57,7 +59,7 @@ class MikrotikIdempotent():
 
   def __init__(
    self, hostname, username, password, desired_params, api_path,
-   state, idempotent_param, check_mode=False):
+   state, idempotent_param, conn, check_mode=False):
 
     self.state            = state
     self.desired_params   = desired_params
@@ -72,7 +74,7 @@ class MikrotikIdempotent():
     self.failed           = False
     self.failed_msg       = []
 
-    self.mk = MikrotikConnection.login()
+    self.mk = conn
 
   def get_current_params(self):
     clean_params(self.desired_params)
