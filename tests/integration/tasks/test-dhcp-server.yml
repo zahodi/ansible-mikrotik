@@ -20,8 +20,8 @@
     settings:
       name:          ansible_test
       address-pool:  'pool1'
-      interface:     ether1
-      use-radius:    "yes"
+      interface:     ether2
+      always-broadcast:    "yes"
       authoritative: after-2sec-delay
 
 - name: ALWAYS_CHANGES Test editing an existing dhcp server (change authoritative)
@@ -35,7 +35,7 @@
       name:          ansible_test
       address-pool:  'pool1'
       interface:     ether1
-      use-radius:    "yes"
+      always-broadcast:    "yes"
       authoritative: after-10sec-delay
   register: dhcp_server_test_1_edit
   failed_when: (
@@ -55,7 +55,7 @@
       name:         ansible_test
       address-pool: 'pool1'
       interface:    ether1
-      use-radius:   "yes"
+      always-broadcast:   "yes"
   register: dhcp_server_test_1_duplicate
   failed_when: (
       not ansible_check_mode
@@ -71,7 +71,7 @@
     state:      "present"
     parameter: dhcp-server
     settings:
-      interface:  "ether5"
+      interface:  "ether2"
       name:       "ansible_test_2"
   register: dhcp_server_test_2
   failed_when: (
