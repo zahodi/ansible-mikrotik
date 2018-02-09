@@ -36,7 +36,7 @@
       not ( address_list_edit_1 | changed )
     )
 
-- name: Test adding a duplicate address-list
+- name: NEVER_CHANGES Test adding a duplicate address-list
   mt_ip:
     hostname:   "{{ mt_hostname }}"
     username:   "{{ mt_user }}"
