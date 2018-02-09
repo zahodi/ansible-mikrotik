@@ -28,6 +28,7 @@ options:
       - sub endpoint for mikrotik snmp
     required: True
     options:
+      - address-list
       - netwatch
       - e-mail
   settings:
@@ -44,9 +45,11 @@ EXAMPLES = '''
     hostname:      "{{ inventory_hostname }}"
     username:      "{{ mt_user }}"
     password:      "{{ mt_pass }}"
-    disabled:      no
-    name:          ftp
-    address:       192.168.52.3
+    parameter:     service
+    settings:
+      disabled:      no
+      name:          ftp
+      address:       192.168.52.3
 '''
 
 from ansible.module_utils.basic import AnsibleModule
@@ -62,7 +65,7 @@ def main():
       settings  = dict(required=False, type='dict'),
       parameter = dict(
         required  = True,
-        choices   = ['service', 'pool'],
+        choices   = ['service', 'pool', 'firewall/address-list'],
         type      = 'str'
       ),
       state   = dict(
@@ -75,7 +78,10 @@ def main():
   )
 
   params = module.params
-  idempotent_parameter = 'name'
+  if params['parameter'] == 'firewall/address-list':
+    idempotent_parameter = 'address'
+  else:
+    idempotent_parameter = 'name'
 
   mt_obj = MikrotikIdempotent(
     hostname         = params['hostname'],
