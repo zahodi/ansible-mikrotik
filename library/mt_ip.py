@@ -65,7 +65,7 @@ def main():
       settings  = dict(required=False, type='dict'),
       parameter = dict(
         required  = True,
-        choices   = ['service', 'pool', 'address-list'],
+        choices   = ['service', 'pool', 'firewall/address-list'],
         type      = 'str'
       ),
       state   = dict(
@@ -78,8 +78,7 @@ def main():
   )
 
   params = module.params
-  if params['parameter'] == 'address-list':
-    params['parameter'] = 'firewall/address-list'
+  if params['parameter'] == 'firewall/address-list':
     idempotent_parameter = 'address'
   else:
     idempotent_parameter = 'name'

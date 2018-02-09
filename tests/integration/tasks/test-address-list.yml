@@ -5,7 +5,7 @@
     username:   "{{ mt_user }}"
     password:   "{{ mt_pass }}"
     state:      "present"
-    parameter: address-list
+    parameter: 'firewall/address-list'
     settings: "{{ item }}"
   with_items:
     - address: 192.168.1.2
@@ -24,7 +24,7 @@
     username:   "{{ mt_user }}"
     password:   "{{ mt_pass }}"
     state:      "present"
-    parameter: address-list
+    parameter: 'firewall/address-list'
     settings:
         address: 192.168.1.2
         comment: dns1
@@ -42,7 +42,7 @@
     username:   "{{ mt_user }}"
     password:   "{{ mt_pass }}"
     state:      "present"
-    parameter: address-list
+    parameter: 'firewall/address-list'
     settings:
         address: 192.168.1.3
         comment: dns2
@@ -60,7 +60,7 @@
     username:   "{{ mt_user }}"
     password:   "{{ mt_pass }}"
     state:      "absent"
-    parameter: address-list
+    parameter: 'firewall/address-list'
     settings:
         address: 192.168.1.2
         comment: dns1
