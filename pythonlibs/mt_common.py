@@ -1,7 +1,7 @@
 #!/usr/bin/env python
-from ansible.module_utils import MikrotikConnection
+#from ansible.module_utils import MikrotikConnection
 import re
-from mt_utils import get_connection
+#from mt_utils import get_connection
 
 # import sys
 

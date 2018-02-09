@@ -1,11 +1,11 @@
 #!/usr/bin/env python
+from __future__ import absolute_import, division, print_function
 from ansible.module_utils.basic import env_fallback
 from ansible.module_utils.six import iteritems
-from __future__ import absolute_import, division, print_function
 from ansible.module_utils import mt_api
 
-__metaclass__ = type
 
+__metaclass__ = type
 
 routeros_provider_spec = {
     'host': dict(),
@@ -52,12 +52,15 @@ class Api:
         password = self._module.params['password']
 
         host = self._module.params['host']
-        port = self._module.params['port']
+        #port = self._module.params['port']
 
-        timeout = self._module.params['timeout']
-
+        #timeout = self._module.params['timeout']
+        #import pdb; pdb.set_trace()
         self._api = mt_api.Mikrotik(
             host,
             username,
             password
         )
+        #import sys; sys.stdin = open('/dev/tty')
+        #import epdb
+        #epdb.serve(port=8888)

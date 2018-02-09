@@ -59,7 +59,7 @@ EXAMPLES = '''
 
 from ansible.module_utils.mt_common import clean_params, MikrotikIdempotent
 from ansible.module_utils.basic import AnsibleModule
-from mt_utils import get_connection
+from ansible.module_utils.mt_utils import get_connection
 
 
 def main():
@@ -100,6 +100,8 @@ def main():
   else:
     idempotent_parameter = 'name'
 
+  module.params['host'] = module.params['hostname']
+  connection = get_connection(module)
   mt_obj = MikrotikIdempotent(
     hostname         = params['hostname'],
     username         = params['username'],
@@ -108,7 +110,7 @@ def main():
     desired_params   = params['settings'],
     idempotent_param = idempotent_parameter,
     api_path         = '/interface/' + str(params['parameter']),
-    conn             = get_connection(module),
+    conn             = connection._api,
     check_mode       = module.check_mode,
   )
 

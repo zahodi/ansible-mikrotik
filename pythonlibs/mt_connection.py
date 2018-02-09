@@ -22,3 +22,4 @@ class MikrotikConnection():
       self.login_success = True
     except:
       self.failed_msg = "Could not log into Mikrotik device." + " Check the username and password.",
+
