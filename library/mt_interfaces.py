@@ -28,6 +28,7 @@ options:
       - sub endpoint for mikrotik tool
     required: True
     options:
+      - ovpn-client
       - ethernet
       - vlan
       - bridge
