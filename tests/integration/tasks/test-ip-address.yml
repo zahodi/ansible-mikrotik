@@ -63,9 +63,9 @@
       interface:  "ether4"
       address:    "192.168.88.4/24"
       network:    "192.168.88.0"
-      comment:    "interface #4!!!"
+      comment:    "interface #4 first addition"
 
-- name: Test changing an ip addr with comment and network ether4
+- name: Test adding a second ip addr with comment and network ether4
   mt_ip_address:
     hostname:   "{{ mt_hostname }}"
     username:   "{{ mt_user }}"
@@ -75,7 +75,7 @@
       interface:  "ether4"
       address:    "192.168.88.5/24"
       network:    "192.168.88.0"
-      comment:    "interface #4 new address!!!"
+      comment:    "interface #4 second addition"
 
 - name: ALWAYS_CHANGES Test removing ip addr ether2
   mt_ip_address:
@@ -88,3 +88,27 @@
       address:    "192.168.88.2/24"
   register: ip_addr_rem_2
   failed_when: not ( ip_addr_rem_2 | changed )
+
+- name: NEVER_CHANGES Test removing ip addr ether2 again
+  mt_ip_address:
+    hostname:   "{{ mt_hostname }}"
+    username:   "{{ mt_user }}"
+    password:   "{{ mt_pass }}"
+    state:      "absent"
+    settings:
+      interface:  "ether2"
+      address:    "192.168.88.2/24"
+  register: ip_addr_rem_2
+  failed_when: ip_addr_rem_2 | changed
+
+- name: ALWAYS_CHANGES Test removing an ip addr from ether4
+  mt_ip_address:
+    hostname:   "{{ mt_hostname }}"
+    username:   "{{ mt_user }}"
+    password:   "{{ mt_pass }}"
+    state:      "absent"
+    settings:
+      interface:  "ether4"
+      address:    "192.168.88.4/24"
+  register: ip_addr_rem_4
+  failed_when: not (ip_addr_rem_4 | changed )
