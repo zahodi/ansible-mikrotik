@@ -70,7 +70,7 @@ def main():
 
   idempotent_parameter = None
   params = module.params
-  idempotent_parameter = 'interface'
+  idempotent_parameter = 'address'
   mt_obj = MikrotikIdempotent(
     hostname         = params['hostname'],
     username         = params['username'],
