@@ -112,3 +112,28 @@
       address:    "192.168.88.4/24"
   register: ip_addr_rem_4
   failed_when: not (ip_addr_rem_4 | changed )
+
+- name: NEVER_CHANGES Verify ip addr from bridge4 has been removed
+  mt_ip_address:
+    hostname:   "{{ mt_hostname }}"
+    username:   "{{ mt_user }}"
+    password:   "{{ mt_pass }}"
+    state:      "absent"
+    settings:
+      interface:  "bridge4"
+      address:    "192.168.88.4/24"
+  register: ip_addr_rem_4
+  failed_when: ip_addr_rem_4 | changed
+
+- name: NEVER_CHANGES Verify that we have the right ip address in bridge4
+  mt_ip_address:
+    hostname:   "{{ mt_hostname }}"
+    username:   "{{ mt_user }}"
+    password:   "{{ mt_pass }}"
+    state:      "present"
+    settings:
+      interface:  "bridge4"
+      address:    "192.168.88.5/24"
+  register: ip_addr_rem_4
+  failed_when: ip_addr_rem_4 | changed 
+
