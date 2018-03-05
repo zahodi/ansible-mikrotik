@@ -1,6 +1,5 @@
 #! /usr/bin/python
-
-import json
+import socket
 from ansible.module_utils import mt_api
 
 from ansible.module_utils.basic import AnsibleModule
@@ -23,12 +22,19 @@ def main():
   msg = ""
 
   mk = mt_api.Mikrotik(hostname,username,password)
-  try:
-    mk.login()
-  except:
-    module.fail_json(
-      msg="Could not log into Mikrotik device.  Check the username and password."
-    )
+  sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+  result = sock.connect_ex((hostname, 8728))
+  if result == 0:
+    try:
+      mk.login()
+    except:
+      module.fail_json(
+        msg="Could not log into Mikrotik device.  Check the username and password."
+      )
+  else:
+      module.fail_json(
+        msg="Could not access RouterOS api." + " Verify API service is enabled and not blocked by firewall."
+      )
 
 
   # response = apiros.talk([b'/ip/address/add', b'=address=192.168.15.2/24', b'=interface=ether7'])

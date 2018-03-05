@@ -16,6 +16,7 @@
         hostname: "{{ mt_hostname }}"
         username: "{{ mt_user }}"
         password: "{{ mt_pass }}"
+      tags: test_login
 
     ###############################
     # Interfaces

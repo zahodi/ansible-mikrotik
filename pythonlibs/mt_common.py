@@ -2,6 +2,7 @@
 from ansible.module_utils import mt_api
 import re
 import sys
+import socket
 
 
 def list_to_string(list):
@@ -83,12 +84,17 @@ class MikrotikIdempotent():
       self.username,
       self.password,
     )
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    result = sock.connect_ex((self.hostname, 8728))
+    if result == 0:
+      try:
+        self.mk.login()
+        self.login_success = True
+      except:
+        self.failed_msg = "Could not log into Mikrotik device." + " Check the username and password.",
+    else:
+        self.failed_msg = "Could not access RouterOS api." + " Verify API service is enabled and not blocked by firewall.",
 
-    try:
-      self.mk.login()
-      self.login_success = True
-    except:
-      self.failed_msg = "Could not log into Mikrotik device." + " Check the username and password.",
 
   def get_current_params(self):
     clean_params(self.desired_params)
