@@ -23,6 +23,19 @@ options:
     description:
       - password used for authentication to mikrotik router
     required: True
+  idempotent:
+    description:
+      - parameter that will define the behavior for the ip address status.
+      - If "interface" is used, only one IP will be allowed per interface.
+        The "state" parameter will define if the IP is added, edited or
+        removed. No settings options are required to removed the IP from an
+        interface
+      - If "address" is used, and interface will be able to have multiple IPs,
+        but address will only be added or removed. In order to change an IP, it
+        will have to be first removed and then added to the interface in two
+        tasks.
+    required: False
+    default: address
   settings:
     description:
       - All Mikrotik compatible parameters for this particular endpoint.
@@ -30,20 +43,50 @@ options:
     required: True
   state:
     description:
-      - absent or present
+      - Depending on the idempotent option, it will define the status of the IP
+        on an interface
+    required: False
+    default: present
 '''
 
 EXAMPLES = '''
+# Add IP to an interface with a comment. If the interface has already an IP it
+# will add as a sencond IP
 - mt_ip_address:
     hostname:   "{{ inventory_hostname }}"
     username:   "{{ mt_user }}"
     password:   "{{ mt_pass }}"
+    idempotent: "address"
+    state:      "present"
     settings:
       interface:  "ether2"
       address:    "192.168.88.2/24"
       network:    "192.168.88.0/24"
-      state:      "present"
       comment:    "link 3"
+
+# Assign IP to the interface. If the interface has any previous IP, it will be
+# replaced by this one.
+- mt_ip_address:
+    hostname:   "{{ inventory_hostname }}"
+    username:   "{{ mt_user }}"
+    password:   "{{ mt_pass }}"
+    idempotent: "interface"
+    state:      "present"
+    settings:
+      interface:  "ether2"
+      address:    "192.168.88.2/24"
+      network:    "192.168.88.0/24"
+      comment:    "link 3"
+
+# Remove any IP from an interface
+- mt_ip_address:
+    hostname:   "{{ inventory_hostname }}"
+    username:   "{{ mt_user }}"
+    password:   "{{ mt_pass }}"
+    idempotent: "interface"
+    state:      "absent"
+    settings:
+      interface:  "ether2"
 '''
 
 from ansible.module_utils.mt_common import clean_params, MikrotikIdempotent
@@ -57,7 +100,13 @@ def main():
           hostname  = dict(required=True),
           username  = dict(required=True),
           password  = dict(required=True, no_log=True),
-          settings  = dict(required=False, type='dict'),
+          settings  = dict(required=True, type='dict'),
+          idempotent = dict(
+              required  = False,
+              default   = 'address',
+              choices   = ['address', 'interface'],
+              type      = 'str'
+          ),
           state = dict(
               required  = False,
               default   = "present",
@@ -68,16 +117,14 @@ def main():
       supports_check_mode=True
   )
 
-  idempotent_parameter = None
   params = module.params
-  idempotent_parameter = 'address'
   mt_obj = MikrotikIdempotent(
     hostname         = params['hostname'],
     username         = params['username'],
     password         = params['password'],
     state            = params['state'],
     desired_params   = params['settings'],
-    idempotent_param = idempotent_parameter,
+    idempotent_param = params['idempotent'],
     api_path         = '/ip/address',
     check_mode       = module.check_mode
   )
