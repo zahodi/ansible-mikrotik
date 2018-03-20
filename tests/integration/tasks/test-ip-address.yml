@@ -16,46 +16,255 @@
     - "bridge3"
     - "bridge4"
 
-- name: ALWAYS_CHANGES Test adding an ip addr ether2
+- name: Remove any ip from bridge interfaces
+  mt_ip_address:
+    hostname: "{{ mt_hostname }}"
+    username: "{{ mt_user }}"
+    password: "{{ mt_pass }}"
+    state:    absent
+    idempotent: interface
+    settings:
+      interface:     "{{ item }}"
+  with_items:
+    - "bridge1"
+    - "bridge2"
+    - "bridge3"
+    - "bridge4"
+
+- name: ALWAYS_CHANGES Test adding an ip addr bridge2
   mt_ip_address:
     hostname:   "{{ mt_hostname }}"
     username:   "{{ mt_user }}"
     password:   "{{ mt_pass }}"
     state:      "present"
-    interface:  "ether2"
-    address:    "192.168.88.2/24"
-    network:    "192.168.88.0"
+    settings:
+      interface:  "bridge2"
+      address:    "192.168.88.2/24"
+      network:    "192.168.88.0"
   register: ip_addr_add_2
   failed_when: not ( ip_addr_add_2 | changed )
 
-- name: Test adding an ip addr with comment bridge2
+- name: NEVER_CHANGES Test adding the same ip addr again to bridge2
   mt_ip_address:
     hostname:   "{{ mt_hostname }}"
     username:   "{{ mt_user }}"
     password:   "{{ mt_pass }}"
     state:      "present"
-    interface:  "bridge2"
-    address:    "192.168.88.3/24"
-    comment:    "bridge #2!!!"
+    settings:
+      interface:  "bridge2"
+      address:    "192.168.88.2/24"
+      network:    "192.168.88.0"
+  register: ip_addr_add_2
+  failed_when: ip_addr_add_2 | changed
 
-- name: Test adding an ip addr with comment and network bridge3
+- name: Test adding an ip addr with comment bridge3
   mt_ip_address:
     hostname:   "{{ mt_hostname }}"
     username:   "{{ mt_user }}"
     password:   "{{ mt_pass }}"
     state:      "present"
-    interface:  "bridge3"
-    address:    "192.168.88.4/24"
-    network:    "192.168.88.0"
-    comment:    "bridge #3!!!"
+    settings:
+      interface:  "bridge3"
+      address:    "192.168.88.3/24"
+      comment:    "bridge #3!!!"
 
-- name: ALWAYS_CHANGES Test removing ip addr ether2
+- name: Test adding an ip addr with comment and network bridge4
+  mt_ip_address:
+    hostname:   "{{ mt_hostname }}"
+    username:   "{{ mt_user }}"
+    password:   "{{ mt_pass }}"
+    state:      "present"
+    settings:
+      interface:  "bridge4"
+      address:    "192.168.88.4/24"
+      network:    "192.168.88.0"
+      comment:    "bridge4 first addition"
+
+- name: Test adding a second ip addr with comment and network bridge4
+  mt_ip_address:
+    hostname:   "{{ mt_hostname }}"
+    username:   "{{ mt_user }}"
+    password:   "{{ mt_pass }}"
+    state:      "present"
+    settings:
+      interface:  "bridge4"
+      address:    "192.168.88.5/24"
+      network:    "192.168.88.0"
+      comment:    "bridge #4 second addition"
+
+- name: ALWAYS_CHANGES Test removing ip addr bridge2
   mt_ip_address:
     hostname:   "{{ mt_hostname }}"
     username:   "{{ mt_user }}"
     password:   "{{ mt_pass }}"
     state:      "absent"
-    interface:  "ether2"
-    address:    "192.168.88.2/24"
+    settings:
+      interface:  "bridge2"
+      address:    "192.168.88.2/24"
   register: ip_addr_rem_2
   failed_when: not ( ip_addr_rem_2 | changed )
+
+- name: NEVER_CHANGES Test removing ip addr bridge2 again
+  mt_ip_address:
+    hostname:   "{{ mt_hostname }}"
+    username:   "{{ mt_user }}"
+    password:   "{{ mt_pass }}"
+    state:      "absent"
+    settings:
+      interface:  "bridge2"
+      address:    "192.168.88.2/24"
+  register: ip_addr_rem_2
+  failed_when: ip_addr_rem_2 | changed
+
+- name: ALWAYS_CHANGES Test removing an ip addr from bridge4
+  mt_ip_address:
+    hostname:   "{{ mt_hostname }}"
+    username:   "{{ mt_user }}"
+    password:   "{{ mt_pass }}"
+    state:      "absent"
+    settings:
+      interface:  "bridge4"
+      address:    "192.168.88.4/24"
+  register: ip_addr_rem_4
+  failed_when: not (ip_addr_rem_4 | changed )
+
+- name: NEVER_CHANGES Verify ip addr from bridge4 has been removed
+  mt_ip_address:
+    hostname:   "{{ mt_hostname }}"
+    username:   "{{ mt_user }}"
+    password:   "{{ mt_pass }}"
+    state:      "absent"
+    settings:
+      interface:  "bridge4"
+      address:    "192.168.88.4/24"
+  register: ip_addr_rem_4
+  failed_when: ip_addr_rem_4 | changed
+
+- name: NEVER_CHANGES Verify that we have the right ip address in bridge4
+  mt_ip_address:
+    hostname:   "{{ mt_hostname }}"
+    username:   "{{ mt_user }}"
+    password:   "{{ mt_pass }}"
+    state:      "present"
+    settings:
+      interface:  "bridge4"
+      address:    "192.168.88.5/24"
+  register: ip_addr_rem_4
+  failed_when: ip_addr_rem_4 | changed 
+
+- name: Remove any IP from bridge interfaces
+  mt_ip_address:
+    hostname: "{{ mt_hostname }}"
+    username: "{{ mt_user }}"
+    password: "{{ mt_pass }}"
+    state:    absent
+    idempotent: interface
+    settings:
+      interface: "{{ item }}"
+  with_items:
+    - "bridge1"
+    - "bridge2"
+    - "bridge3"
+    - "bridge4"
+
+- name: ALWAYS_CHANGES Add ip using idempotent interface on bridge2
+  mt_ip_address:
+    hostname:   "{{ mt_hostname }}"
+    username:   "{{ mt_user }}"
+    password:   "{{ mt_pass }}"
+    state:      "present"
+    idempotent: "interface"
+    settings:
+      interface:  "bridge2"
+      address:    "192.168.89.2/24"
+  register: ip_addr_rem_2
+  failed_when: not (ip_addr_rem_2 | changed)
+
+- name: NEVER_CHANGES Add AGAIN ip using idempotent interface on bridge2
+  mt_ip_address:
+    hostname:   "{{ mt_hostname }}"
+    username:   "{{ mt_user }}"
+    password:   "{{ mt_pass }}"
+    state:      "present"
+    idempotent: "interface"
+    settings:
+      interface:  "bridge2"
+      address:    "192.168.89.2/24"
+  register: ip_addr_rem_2
+  failed_when: ip_addr_rem_2 | changed
+
+- name: ALWAYS_CHANGES Add ip using idempotent interface on bridge3
+  mt_ip_address:
+    hostname:   "{{ mt_hostname }}"
+    username:   "{{ mt_user }}"
+    password:   "{{ mt_pass }}"
+    state:      "present"
+    idempotent: "interface"
+    settings:
+      interface:  "bridge3"
+      address:    "192.168.89.3/24"
+  register: ip_addr_rem_3
+  failed_when: not (ip_addr_rem_3 | changed)
+
+- name: ALWAYS_CHANGES Remove ip using idempotent interface on bridge3
+  mt_ip_address:
+    hostname:   "{{ mt_hostname }}"
+    username:   "{{ mt_user }}"
+    password:   "{{ mt_pass }}"
+    state:      "absent"
+    idempotent: "interface"
+    settings:
+      interface: "bridge3"
+  register: ip_addr_rem_3
+  failed_when: not (ip_addr_rem_3 | changed)
+
+- name: NEVER_CHANGES Remove ip AGAIN using idempotent interface on bridge3
+  mt_ip_address:
+    hostname:   "{{ mt_hostname }}"
+    username:   "{{ mt_user }}"
+    password:   "{{ mt_pass }}"
+    state:      "absent"
+    idempotent: "interface"
+    settings:
+      interface: "bridge3" 
+  register: ip_addr_rem_3
+  failed_when: ip_addr_rem_3 | changed
+
+- name: ALWAYS_CHANGES Add ip using idempotent interface on bridge4
+  mt_ip_address:
+    hostname:   "{{ mt_hostname }}"
+    username:   "{{ mt_user }}"
+    password:   "{{ mt_pass }}"
+    state:      "present"
+    idempotent: "interface"
+    settings:
+      interface:  "bridge4"
+      address:    "192.168.89.4/24"
+  register: ip_addr_rem_4
+  failed_when: not (ip_addr_rem_4 | changed)
+
+- name: ALWAYS_CHANGES Edit ip using idempotent interface on bridge4
+  mt_ip_address:
+    hostname:   "{{ mt_hostname }}"
+    username:   "{{ mt_user }}"
+    password:   "{{ mt_pass }}"
+    state:      "present"
+    idempotent: "interface"
+    settings:
+      interface:  "bridge4"
+      address:    "192.168.89.5/24"
+  register: ip_addr_rem_4
+  failed_when: not (ip_addr_rem_4 | changed)
+
+- name: ALWAYS_CHANGES Add comment using idempotent interface on bridge4
+  mt_ip_address:
+    hostname:   "{{ mt_hostname }}"
+    username:   "{{ mt_user }}"
+    password:   "{{ mt_pass }}"
+    state:      "present"
+    idempotent: "interface"
+    settings:
+      interface:  "bridge4"
+      comment: "This is a final comment"
+  register: ip_addr_rem_4
+  failed_when: not (ip_addr_rem_4 | changed)
