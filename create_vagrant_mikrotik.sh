@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
-dl_link='https://download2.mikrotik.com/routeros/6.38.1/chr-6.38.1.vdi'
-vmname='mikrotik-6-38-1'
+dl_link='https://download.mikrotik.com/routeros/6.42.9/chr-6.42.9.vdi'
+vmname='mikrotik-6-42-9'
 
 [[ -f ./downloads/$(basename "$dl_link") ]] && {
   echo "*** vdi already exists"
