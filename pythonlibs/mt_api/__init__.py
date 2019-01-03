@@ -108,7 +108,7 @@ class RosApiLengthUtils(object):
             for _ in xrange(size):
                 data.append(chr(i & 0xff))
                 i >>= 8
-            return ''.join(reversed(data))
+            return b''.join(reversed(data))
     else:
         def from_bytes(self, data):
             return int.from_bytes(data, 'big')
