@@ -90,8 +90,8 @@ class MikrotikIdempotent():
       try:
         self.mk.login()
         self.login_success = True
-      except:
-        self.failed_msg = "Could not log into Mikrotik device." + " Check the username and password.",
+      except Exception as e:
+        self.failed_msg = "Could not log into Mikrotik device." + " Check the username and password. Exception {} - {}".format(type(e), e),
     else:
         self.failed_msg = "Could not access RouterOS api." + " Verify API service is enabled and not blocked by firewall.",
 
