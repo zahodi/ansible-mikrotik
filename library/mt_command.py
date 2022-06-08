@@ -37,7 +37,7 @@ EXAMPLES = '''
     hostname:      "{{ inventory_hostname }}"
     username:      "{{ mt_user }}"
     password:      "{{ mt_pass }}"
-    name:          /system/backup/save
+    command:       /system/backup/save
     command_arguments:
       name:     ansible_test
       password: 123
