@@ -83,7 +83,7 @@ class RosApiLengthUtils(object):
         temp2 = self.api.read_bytes(times)
         try:
             temp3 = temp2.decode('utf-8')
-        except:
+        except UnicodeDecodeError:
             try:
                 temp3 = temp2.decode('windows-1252')
             except Exception:
